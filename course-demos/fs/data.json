@@ -1,0 +1,9 @@
+{
+  "medicines": [
+    { "name": "Paracetamol", "form": "tablet" },
+    { "name": "Ibuprofen", "form": "tablet" },
+    { "name": "Amoxicillin", "form": "capsule" },
+    { "name": "Cetirizine", "form": "tablet" },
+    { "name": "ORS", "form": "sachet" }
+  ]
+}
