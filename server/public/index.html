@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Velora — find a medicine in stock</title>
+  <meta name="description" content="Find a verified pharmacy that has your medicine in stock.">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/">Velora</a>
+      <p class="tagline">Find a verified pharmacy that has your medicine in stock.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <form id="search-form" class="search" novalidate>
+      <label class="field-label" for="medicine">Medicine name</label>
+      <div class="search-row">
+        <input id="medicine" name="medicine" type="search" placeholder="e.g. Paracetamol" autocomplete="off" spellcheck="false" required>
+        <button type="submit" id="search-button">Search</button>
+      </div>
+      <p class="hint">Use the name on the strip or box.</p>
+    </form>
+
+    <section class="results" aria-labelledby="results-heading">
+      <h2 id="results-heading" class="visually-hidden">Results</h2>
+      <p id="state-message" class="state state-idle" role="status">Search a medicine to see pharmacies with stock.</p>
+      <ul id="result-list" class="result-list" hidden></ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">Velora · development build · search only, no accounts or reservations yet.</div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
