@@ -91,14 +91,17 @@ commits 12–15.
 | Raw http | `node course-demos/http/server.js` | routing, status and headers by hand; POST body through a Buffer |
 | Files and streams | `node course-demos/fs/index.js` | `readFileSync` vs callback vs promises; streaming a 5,000-row CSV; `.pipe()` |
 | Event loop | `node course-demos/event-loop/index.js` | blocking `pbkdf2Sync` vs pooled `pbkdf2`, with timings |
+| Express routing | `node course-demos/express/server.js` | all five methods, route params, query filtering and the JSON error envelope |
 
-The http demo listens on port 3001; the others print to the terminal and exit.
+The http and Express demos listen on ports 3001 and 3002; the others print to
+the terminal and exit.
 
 ## Project structure
 
 ```text
 course-demos/
   event-loop/        L2 demo: blocking vs pooled crypto
+  express/           L7 demo: five methods and routing
   fs/                L2–L4 demo: modules, fs, streams
   http/              L5–L6 demo: raw http server
 server/
