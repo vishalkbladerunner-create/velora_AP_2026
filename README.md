@@ -80,9 +80,16 @@ Then open <http://localhost:3000> for the search page.
 | --- | --- | --- |
 | `GET` | `/health` | `{"ok":true}` |
 | `GET` | `/` | static search page |
+| `GET` | `/medicines` | every medicine; `?name=dolo` filters by name, ignoring case |
+| `GET` | `/medicines/:id` | one medicine; `400` for a non-numeric id, `404` when missing |
+| `POST` | `/medicines` | development only: `{ "name", "form" }` → `201` |
+| `PUT` | `/medicines/:id` | development only: replaces `name` and `form` |
+| `DELETE` | `/medicines/:id` | development only: `204`; `400` while a pharmacy stocks it |
 
-The database-backed routes (`/medicines`, `/pharmacies`, `/stock`) are added in
-commits 12–15.
+Success returns the bare resource; failure returns `{ "error": "..." }`. The
+development-only writes are not registered when `NODE_ENV=production`.
+
+The `/pharmacies` and `/stock` routes are added in commits 15 and 16.
 
 ## Course demos
 
