@@ -15,6 +15,12 @@ function readId(req) {
 const getAll = async (req, res) => {
   try {
     const name = req.query.name;
+
+    if (name !== undefined && typeof name !== 'string') {
+      res.status(400).json({ error: 'Invalid name parameter' });
+      return;
+    }
+
     const where = {};
 
     if (name) {
@@ -153,9 +159,12 @@ const deleteMedicine = async (req, res) => {
     }
 
     // StockItem rows point at this medicine, and the foreign key blocks the delete.
-    const stockRows = await prisma.stockItem.count({ where: { medicineId: id } });
+    const stockRows = await prisma.stockItem.findMany({
+      where: { medicineId: id },
+      select: { id: true },
+    });
 
-    if (stockRows > 0) {
+    if (stockRows.length > 0) {
       res.status(400).json({ error: 'Medicine is still stocked by a pharmacy' });
       return;
     }

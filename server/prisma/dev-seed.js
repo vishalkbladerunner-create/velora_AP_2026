@@ -90,18 +90,21 @@ async function seedStock() {
     }
 
     // The schema has no compound unique on (pharmacyId, medicineId), so
-    // findUnique cannot be used here; findFirst is the same check-then-create.
-    const existing = await prisma.stockItem.findFirst({
+    // findUnique cannot be used here; findMany with take: 1 is the same
+    // check-then-create.
+    const existingRows = await prisma.stockItem.findMany({
       where: { pharmacyId: pharmacy.id, medicineId: medicine.id },
+      take: 1,
     });
 
-    if (!existing) {
+    if (existingRows.length === 0) {
       await prisma.stockItem.create({
         data: {
           pharmacyId: pharmacy.id,
           medicineId: medicine.id,
           quantity: row.quantity,
           pricePaise: row.pricePaise,
+          updatedAt: new Date(),
         },
       });
       created = created + 1;
@@ -144,4 +147,6 @@ main()
     console.error('Seed failed: ' + error.message);
     process.exitCode = 1;
   })
+  // $disconnect is a client lifecycle call, not a CRUD operation: it closes
+  // the connection pool so the script can exit.
   .finally(() => prisma.$disconnect());
