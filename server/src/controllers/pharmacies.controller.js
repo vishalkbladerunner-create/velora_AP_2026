@@ -58,6 +58,16 @@ async function searchByMedicine(medicine, area) {
 
 const getAll = async (req, res) => {
   try {
+    // Express 5 keeps bracket syntax as a literal key, so reject it explicitly.
+    const keys = Object.keys(req.query);
+
+    for (const key of keys) {
+      if (key.indexOf('[') !== -1 || key.indexOf(']') !== -1) {
+        res.status(400).json({ error: 'Invalid query parameter: ' + key });
+        return;
+      }
+    }
+
     const medicine = req.query.medicine;
     const area = req.query.area;
 
