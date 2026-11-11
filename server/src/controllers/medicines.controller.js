@@ -14,6 +14,16 @@ function readId(req) {
 // GET /medicines and GET /medicines?name=dolo
 const getAll = async (req, res) => {
   try {
+    // Express 5 keeps bracket syntax as a literal key, so reject it explicitly.
+    const keys = Object.keys(req.query);
+
+    for (const key of keys) {
+      if (key.indexOf('[') !== -1 || key.indexOf(']') !== -1) {
+        res.status(400).json({ error: 'Invalid query parameter: ' + key });
+        return;
+      }
+    }
+
     const name = req.query.name;
 
     if (name !== undefined && typeof name !== 'string') {
