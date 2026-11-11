@@ -17,8 +17,8 @@ The foundations are in place:
 - A static search page served from `public/` with loading, empty, error and
   data states.
 
-The database, seed and search endpoints arrive in the data phase
-(commits 12–15). Until then a search returns `404 Route not found`.
+The data phase adds the schema, a development seed, and the medicines and
+pharmacies endpoints, so the search page now returns live results.
 
 ## Requirements
 
@@ -107,10 +107,15 @@ Then open <http://localhost:3000> for the search page.
 | `PUT` | `/medicines/:id` | development only: replaces `name` and `form` |
 | `DELETE` | `/medicines/:id` | development only: `204`; `400` while a pharmacy stocks it |
 
+| `GET` | `/pharmacies` | verified pharmacies with their stock; `?area=Model Town` filters by area |
+| `GET` | `/pharmacies?medicine=dolo` | verified pharmacies holding a matching medicine with quantity above 0; each carries only the matching stock |
+| `GET` | `/pharmacies/:id` | one pharmacy with all its stock and each medicine; `400` / `404` |
+| `POST` | `/pharmacies` | development only: `{ "name", "area", "address", "phone", "licenceNumber" }` → `201`, always `PENDING` |
+
 Success returns the bare resource; failure returns `{ "error": "..." }`. The
 development-only writes are not registered when `NODE_ENV=production`.
 
-The `/pharmacies` and `/stock` routes are added in commits 15 and 16.
+The `/stock` routes are added in commit 16.
 
 ## Course demos
 
