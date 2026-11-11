@@ -1,0 +1,14 @@
+[
+  { "name": "Dolo 650", "form": "TABLET" },
+  { "name": "Crocin Advance", "form": "TABLET" },
+  { "name": "Pan 40", "form": "TABLET" },
+  { "name": "Azithral 500", "form": "TABLET" },
+  { "name": "Augmentin 625 Duo", "form": "TABLET" },
+  { "name": "Allegra 120", "form": "TABLET" },
+  { "name": "Montair LC", "form": "TABLET" },
+  { "name": "Becosules", "form": "CAPSULE" },
+  { "name": "Ascoril LS", "form": "SYRUP" },
+  { "name": "Digene Gel", "form": "SYRUP" },
+  { "name": "Electral ORS", "form": "POWDER" },
+  { "name": "Betadine 5%", "form": "OINTMENT" }
+]
