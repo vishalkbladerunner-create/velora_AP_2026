@@ -4,6 +4,7 @@ const path = require('path');
 const logger = require('./middlewares/logger');
 const healthRouter = require('./routes/health.router');
 const medicinesRouter = require('./routes/medicines.router');
+const pharmaciesRouter = require('./routes/pharmacies.router');
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use('/health', healthRouter);
 app.use('/medicines', medicinesRouter);
+app.use('/pharmacies', pharmaciesRouter);
 
 // Terminal 404: it sends the response and never calls next().
 app.use((req, res) => {
