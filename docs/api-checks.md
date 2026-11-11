@@ -17,7 +17,7 @@ Run on 2026-11-11 by Manav, `NODE_ENV=development`, seeded database
 | 4 | `GET` | `/medicines/999` | 404 | 404 | `{"error":"Medicine not found"}` |
 | 5 | `POST` | `/medicines` `{"form":"TABLET"}` | 400 | 400 | `{"error":"Missing medicine name or form"}` |
 | 6 | `POST` | `/medicines` `{"name":"Dolo 650","form":"TABLET"}` | 400 | 400 | `{"error":"A medicine with this name already exists"}` |
-| 7 | `POST` | `/medicines` `{"name":"Cetzine","form":"TABLET"}` | 201 | created | returned the new row, id 13 (status code not printed in this run) |
+| 7 | `POST` | `/medicines` `{"name":"Cetzine","form":"TABLET"}` | 201 | 201 | `{"id":13,"name":"Cetzine","form":"TABLET"}`; re-run on 2026-11-11 against a freshly seeded scratch database (`velora_fixcheck`) to observe the code |
 | 8 | `PUT` | `/medicines/13` `{"name":"Cetzine 10","form":"TABLET"}` | 200 | 200 | `{"id":13,"name":"Cetzine 10","form":"TABLET"}` |
 | 9 | `DELETE` | `/medicines/13` | 204 | 204 | empty body |
 | 10 | `DELETE` | `/medicines/1` | 400 | 400 | `{"error":"Medicine is still stocked by a pharmacy"}` |
@@ -43,6 +43,11 @@ Run on 2026-11-11 by Manav, `NODE_ENV=development`, seeded database
 | 9 | `POST` | `/pharmacies` `{"name":"Test Chemist"}` | 400 | 400 | `{"error":"Missing pharmacy fields: area, address, phone, licenceNumber"}` |
 | 10 | `POST` | `/pharmacies` full body plus `"status":"VERIFIED"` | 201 | 201 | created as `PENDING`: the body's status is ignored |
 | 11 | `POST` | same body again | 400 | 400 | `{"error":"A pharmacy with this licence number already exists"}` |
+| 12 | `GET` | `/pharmacies/5` (a PENDING pharmacy) | 404 | 404 | `{"error":"Pharmacy not found"}`: a PENDING pharmacy is treated as not found |
+| 13 | `GET` | `/pharmacies?medicine=dolo&medicine=pan` (array query) | 400 | 400 | `{"error":"Invalid medicine parameter"}`. Note: `?medicine[]=dolo` returns 200 with every verified pharmacy, because Express 5's default query parser reads `medicine[]` as a separate key, not an array |
+
+Rows 12 and 13 were run on 2026-11-11 against a freshly seeded scratch database
+(`velora_fixcheck`) after the P2 review fixes.
 
 The run leaves one PENDING "Test Chemist" row (licence `HR-SNP-TEST-0199`) in
 the local database; it never appears in search because it is not VERIFIED.

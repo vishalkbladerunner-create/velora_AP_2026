@@ -7,8 +7,8 @@ const medicinesRouter = express.Router();
 medicinesRouter.get('/', medicinesController.getAll);
 medicinesRouter.get('/:id', medicinesController.getById);
 
-// Writes have no authentication, so they exist only outside production.
-// With NODE_ENV=production these paths fall through to the terminal 404.
+// Deployment guard, not authentication: these routes are not registered in
+// production. The API has no accounts; never expose it publicly.
 if (config.nodeEnv !== 'production') {
   medicinesRouter.post('/', medicinesController.createMedicine);
   medicinesRouter.put('/:id', medicinesController.updateMedicine);

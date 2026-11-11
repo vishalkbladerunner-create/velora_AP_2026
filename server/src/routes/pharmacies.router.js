@@ -7,7 +7,8 @@ const pharmaciesRouter = express.Router();
 pharmaciesRouter.get('/', pharmaciesController.getAll);
 pharmaciesRouter.get('/:id', pharmaciesController.getById);
 
-// Creating a pharmacy has no authentication, so it exists only outside production.
+// Deployment guard, not authentication: these routes are not registered in
+// production. The API has no accounts; never expose it publicly.
 if (config.nodeEnv !== 'production') {
   pharmaciesRouter.post('/', pharmaciesController.createPharmacy);
 }

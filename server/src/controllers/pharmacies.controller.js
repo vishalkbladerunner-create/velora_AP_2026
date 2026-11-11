@@ -61,6 +61,16 @@ const getAll = async (req, res) => {
     const medicine = req.query.medicine;
     const area = req.query.area;
 
+    if (medicine !== undefined && typeof medicine !== 'string') {
+      res.status(400).json({ error: 'Invalid medicine parameter' });
+      return;
+    }
+
+    if (area !== undefined && typeof area !== 'string') {
+      res.status(400).json({ error: 'Invalid area parameter' });
+      return;
+    }
+
     if (medicine) {
       const pharmacies = await searchByMedicine(medicine, area);
       res.json(pharmacies);
@@ -101,7 +111,7 @@ const getById = async (req, res) => {
       include: { stock: { include: { medicine: true } } },
     });
 
-    if (!pharmacy) {
+    if (!pharmacy || pharmacy.status !== 'VERIFIED') {
       res.status(404).json({ error: 'Pharmacy not found' });
       return;
     }

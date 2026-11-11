@@ -21,7 +21,7 @@
 
 When someone needs a medicine urgently, typically late at night, in an unfamiliar area or for a prescription that is hard to find, the usual approach is to phone or visit pharmacies one at a time. Velora replaces that with one search: type a medicine name and get back only **verified** pharmacies that currently hold it **with stock above zero**, each listed with the matching items, quantities and prices.
 
-Velora is the CSA213 Advanced Programming capstone at Rishihood University. It is a REST API built with **Node.js, Express 5, Prisma ORM and PostgreSQL**, plus a static client served by the same process. The scope is deliberately bounded by the course lectures (L1–L12), so the system shows a small, complete and well-tested core rather than a broad one.
+Velora is the CSA213 Advanced Programming capstone at Rishihood University. It is a REST API built with **Node.js, Express 5, Prisma ORM and PostgreSQL**, plus a static client served by the same process. The scope is deliberately bounded by the course lectures (L1–L12), so the system shows a small, complete and manually verified core rather than a broad one.
 
 | Capability | Status |
 | --- | --- |
@@ -185,10 +185,12 @@ No other status codes are used.
 | `GET` | `/pharmacies?area=` | Same, filtered by area (case-insensitive exact match) | 200 |
 | `GET` | `/pharmacies?medicine=` | Search: verified pharmacies with a matching in-stock item | 200 |
 | `GET` | `/pharmacies?medicine=&area=` | Search narrowed to one area | 200 |
-| `GET` | `/pharmacies/:id` | One pharmacy with all its stock and each medicine | 200, 400, 404 |
+| `GET` | `/pharmacies/:id` | One verified pharmacy with all its stock and each medicine | 200, 400, 404 |
 | `POST` | `/pharmacies` | Create; the server sets `status` · *development only* | 201, 400 |
 
-> **Development-only writes.** Write routes are registered only when `NODE_ENV` is not `production`. In production those paths fall through to the terminal 404, so an unauthenticated build cannot change data.
+> **Development-only writes.** The write routes are not registered when
+> `NODE_ENV=production`. This is a deployment guard, not authentication:
+> the API has no accounts and must never be exposed publicly.
 
 ### Examples
 
@@ -405,7 +407,7 @@ Every endpoint is exercised with `curl` against a seeded database, and the resul
 | Suite | Owner | Covers | Result |
 | --- | --- | --- | --- |
 | t1 · Medicines read | Manav | list, filter, 400 / 404, create / replace / delete | 10 / 10 pass |
-| t2 · Pharmacies read | Manav | verified-only list, area, medicine search, detail, server-owned status | 11 / 11 pass |
+| t2 · Pharmacies read | Manav | verified-only list and detail, area, medicine search, server-owned status, array query | 13 / 13 pass |
 | t3 · Stock write | Sayem | planned with commit 16 | none yet |
 | t4 · Envelope and codes | Yash | planned with commit 19 | none yet |
 

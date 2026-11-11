@@ -39,7 +39,7 @@ model StockItem {
   quantity   Int      @default(0)
   pricePaise Int
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime
   pharmacy   Pharmacy @relation(fields: [pharmacyId], references: [id])
   medicine   Medicine @relation(fields: [medicineId], references: [id])
 }
