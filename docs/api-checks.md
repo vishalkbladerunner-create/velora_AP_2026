@@ -44,10 +44,25 @@ Run on 2026-11-11 by Manav, `NODE_ENV=development`, seeded database
 | 10 | `POST` | `/pharmacies` full body plus `"status":"VERIFIED"` | 201 | 201 | created as `PENDING`: the body's status is ignored |
 | 11 | `POST` | same body again | 400 | 400 | `{"error":"A pharmacy with this licence number already exists"}` |
 | 12 | `GET` | `/pharmacies/5` (a PENDING pharmacy) | 404 | 404 | `{"error":"Pharmacy not found"}`: a PENDING pharmacy is treated as not found |
-| 13 | `GET` | `/pharmacies?medicine=dolo&medicine=pan` (array query) | 400 | 400 | `{"error":"Invalid medicine parameter"}`. Note: `?medicine[]=dolo` returns 200 with every verified pharmacy, because Express 5's default query parser reads `medicine[]` as a separate key, not an array |
+| 13 | `GET` | `/pharmacies?medicine=dolo&medicine=pan` (array query) | 400 | 400 | `{"error":"Invalid medicine parameter"}`. Note: at the time of this run, `?medicine[]=dolo` returned 200 with every verified pharmacy, because Express 5's default query parser reads `medicine[]` as a separate key, not an array. It is rejected after the 2026-11-12 hardening below |
 
 Rows 12 and 13 were run on 2026-11-11 against a freshly seeded scratch database
 (`velora_fixcheck`) after the P2 review fixes.
+
+## P2 query hardening (2026-11-12, Vishal)
+
+Run after the F5 follow-up, `NODE_ENV=development`, against a freshly seeded
+scratch database. Bracket syntax is rejected before Prisma sees it.
+
+| # | Method | Request | Expected | Actual | Body / note |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `GET` | `/medicines?name[]=dolo` | 400 | 400 | `{"error":"Invalid query parameter: name[]"}` |
+| 2 | `GET` | `/pharmacies?medicine[]=dolo` | 400 | 400 | `{"error":"Invalid query parameter: medicine[]"}` |
+| 3 | `GET` | `/medicines?name=dolo` | 200 | 200 | the normal filter still returns one row |
+| 4 | `GET` | `/pharmacies?medicine=dolo` | 200 | 200 | three verified pharmacies, cheapest first |
+
+The regular `curl` sweep from the fix brief was run again on the same database;
+no route returned a 500.
 
 The run leaves one PENDING "Test Chemist" row (licence `HR-SNP-TEST-0199`) in
 the local database; it never appears in search because it is not VERIFIED.
