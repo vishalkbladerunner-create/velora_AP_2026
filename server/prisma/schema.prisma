@@ -1,5 +1,5 @@
 // Prisma schema for the Velora API.
-// Models are added in commit #6; this commit only wires the connection.
+// Three models: a Medicine, a Pharmacy, and the StockItem that links them.
 // Docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -9,4 +9,37 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// A medicine that pharmacies can stock, e.g. "Dolo 650" as a "TABLET".
+model Medicine {
+  id    Int         @id @default(autoincrement())
+  name  String      @unique
+  form  String
+  stock StockItem[]
+}
+
+// A pharmacy. It starts as PENDING; only VERIFIED ones are shown in search.
+model Pharmacy {
+  id            Int         @id @default(autoincrement())
+  name          String
+  area          String
+  address       String
+  phone         String
+  licenceNumber String      @unique
+  status        String      @default("PENDING")
+  stock         StockItem[]
+}
+
+// How many units of one medicine one pharmacy has, and the price in paise.
+model StockItem {
+  id         Int      @id @default(autoincrement())
+  pharmacyId Int
+  medicineId Int
+  quantity   Int      @default(0)
+  pricePaise Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  pharmacy   Pharmacy @relation(fields: [pharmacyId], references: [id])
+  medicine   Medicine @relation(fields: [medicineId], references: [id])
 }
