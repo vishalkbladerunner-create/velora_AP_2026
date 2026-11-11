@@ -106,7 +106,6 @@ Then open <http://localhost:3000> for the search page.
 | `POST` | `/medicines` | development only: `{ "name", "form" }` → `201` |
 | `PUT` | `/medicines/:id` | development only: replaces `name` and `form` |
 | `DELETE` | `/medicines/:id` | development only: `204`; `400` while a pharmacy stocks it |
-
 | `GET` | `/pharmacies` | verified pharmacies with their stock; `?area=Model Town` filters by area |
 | `GET` | `/pharmacies?medicine=dolo` | verified pharmacies holding a matching medicine with quantity above 0; each carries only the matching stock |
 | `GET` | `/pharmacies/:id` | one pharmacy with all its stock and each medicine; `400` / `404` |
