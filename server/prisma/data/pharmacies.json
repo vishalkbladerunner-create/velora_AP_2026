@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Sanjeevani Medicos",
+    "area": "Model Town",
+    "address": "Shop 4, Main Market, Model Town, Sonipat",
+    "phone": "9000000101",
+    "licenceNumber": "HR-SNP-DEMO-0101",
+    "status": "VERIFIED"
+  },
+  {
+    "name": "City Care Pharmacy",
+    "area": "Sector 14",
+    "address": "SCO 22, Sector 14 Market, Sonipat",
+    "phone": "9000000102",
+    "licenceNumber": "HR-SNP-DEMO-0102",
+    "status": "VERIFIED"
+  },
+  {
+    "name": "Highway 24x7 Chemist",
+    "area": "Murthal",
+    "address": "GT Road, near Murthal Dhaba Chowk, Sonipat",
+    "phone": "9000000103",
+    "licenceNumber": "HR-SNP-DEMO-0103",
+    "status": "VERIFIED"
+  },
+  {
+    "name": "Kundli Health Store",
+    "area": "Kundli",
+    "address": "Plot 9, Industrial Area Road, Kundli, Sonipat",
+    "phone": "9000000104",
+    "licenceNumber": "HR-SNP-DEMO-0104",
+    "status": "VERIFIED"
+  },
+  {
+    "name": "Apna Medical Hall",
+    "area": "Sector 14",
+    "address": "Booth 7, Sector 14 Huda Market, Sonipat",
+    "phone": "9000000105",
+    "licenceNumber": "HR-SNP-DEMO-0105",
+    "status": "PENDING"
+  },
+  {
+    "name": "Shree Ram Chemists",
+    "area": "Model Town",
+    "address": "12 Railway Road, Model Town, Sonipat",
+    "phone": "9000000106",
+    "licenceNumber": "HR-SNP-DEMO-0106",
+    "status": "PENDING"
+  }
+]

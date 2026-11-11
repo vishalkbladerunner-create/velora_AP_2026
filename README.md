@@ -54,6 +54,27 @@ export PORT=3000              # optional
 A missing `DATABASE_URL` stops boot with one message:
 `Missing environment variables: DATABASE_URL`.
 
+## Database
+
+Create the tables, then fill them with demo data. Run both from `server/`
+with PostgreSQL running and `server/.env` filled in.
+
+```bash
+cd server
+npx prisma migrate dev          # applies prisma/migrations/ to your database
+node prisma/dev-seed.js         # demo medicines, pharmacies and stock
+```
+
+The seed is **development-only**. It reads `prisma/data/*.json`, creates only
+the rows that are missing, and prints a count per table, so running it twice
+leaves the same counts. Seed one table with an argument:
+
+```bash
+node prisma/dev-seed.js medicines
+node prisma/dev-seed.js pharmacies
+node prisma/dev-seed.js stock   # needs medicines and pharmacies first
+```
+
 ## Run
 
 ```bash
@@ -105,7 +126,7 @@ course-demos/
   fs/                L2–L4 demo: modules, fs, streams
   http/              L5–L6 demo: raw http server
 server/
-  prisma/            schema (models arrive in commit 12)
+  prisma/            schema, migrations, development seed and its JSON data
   public/            static search page
   src/
     config/          environment read once, fail fast

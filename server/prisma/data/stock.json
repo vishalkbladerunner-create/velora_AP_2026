@@ -1,0 +1,27 @@
+[
+  { "licenceNumber": "HR-SNP-DEMO-0101", "medicine": "Dolo 650", "quantity": 40, "pricePaise": 3200 },
+  { "licenceNumber": "HR-SNP-DEMO-0101", "medicine": "Pan 40", "quantity": 25, "pricePaise": 15500 },
+  { "licenceNumber": "HR-SNP-DEMO-0101", "medicine": "Electral ORS", "quantity": 60, "pricePaise": 2200 },
+  { "licenceNumber": "HR-SNP-DEMO-0101", "medicine": "Ascoril LS", "quantity": 0, "pricePaise": 13800 },
+  { "licenceNumber": "HR-SNP-DEMO-0101", "medicine": "Allegra 120", "quantity": 12, "pricePaise": 21000 },
+
+  { "licenceNumber": "HR-SNP-DEMO-0102", "medicine": "Dolo 650", "quantity": 15, "pricePaise": 3100 },
+  { "licenceNumber": "HR-SNP-DEMO-0102", "medicine": "Crocin Advance", "quantity": 30, "pricePaise": 2000 },
+  { "licenceNumber": "HR-SNP-DEMO-0102", "medicine": "Azithral 500", "quantity": 8, "pricePaise": 11900 },
+  { "licenceNumber": "HR-SNP-DEMO-0102", "medicine": "Augmentin 625 Duo", "quantity": 5, "pricePaise": 20400 },
+  { "licenceNumber": "HR-SNP-DEMO-0102", "medicine": "Digene Gel", "quantity": 10, "pricePaise": 15000 },
+
+  { "licenceNumber": "HR-SNP-DEMO-0103", "medicine": "Dolo 650", "quantity": 100, "pricePaise": 3300 },
+  { "licenceNumber": "HR-SNP-DEMO-0103", "medicine": "Electral ORS", "quantity": 80, "pricePaise": 2200 },
+  { "licenceNumber": "HR-SNP-DEMO-0103", "medicine": "Betadine 5%", "quantity": 6, "pricePaise": 12500 },
+  { "licenceNumber": "HR-SNP-DEMO-0103", "medicine": "Montair LC", "quantity": 0, "pricePaise": 24500 },
+
+  { "licenceNumber": "HR-SNP-DEMO-0104", "medicine": "Becosules", "quantity": 20, "pricePaise": 4700 },
+  { "licenceNumber": "HR-SNP-DEMO-0104", "medicine": "Montair LC", "quantity": 9, "pricePaise": 24000 },
+  { "licenceNumber": "HR-SNP-DEMO-0104", "medicine": "Pan 40", "quantity": 14, "pricePaise": 15500 },
+
+  { "licenceNumber": "HR-SNP-DEMO-0105", "medicine": "Dolo 650", "quantity": 50, "pricePaise": 3000 },
+  { "licenceNumber": "HR-SNP-DEMO-0105", "medicine": "Ascoril LS", "quantity": 7, "pricePaise": 13800 },
+
+  { "licenceNumber": "HR-SNP-DEMO-0106", "medicine": "Crocin Advance", "quantity": 18, "pricePaise": 2000 }
+]
