@@ -1,0 +1,37 @@
+-- R8
+-- READ: first step of the medicine search — resolve the name fragment to
+-- medicine ids (GET /pharmacies?medicine=dolo).
+SELECT "id"
+FROM "Medicine"
+WHERE "name" ILIKE '%dolo%';
+
+=== R8 run 1 ===
+Seq Scan on "Medicine"  (cost=0.00..20.62 rows=7 width=4) (actual time=0.004..0.007 rows=1 loops=1)
+  Filter: (name ~~* '%dolo%'::text)
+  Rows Removed by Filter: 11
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=79
+Planning Time: 0.230 ms
+Execution Time: 0.019 ms
+
+=== R8 run 2 ===
+Seq Scan on "Medicine"  (cost=0.00..20.62 rows=7 width=4) (actual time=0.004..0.006 rows=1 loops=1)
+  Filter: (name ~~* '%dolo%'::text)
+  Rows Removed by Filter: 11
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=79
+Planning Time: 0.255 ms
+Execution Time: 0.017 ms
+
+=== R8 run 3 ===
+Seq Scan on "Medicine"  (cost=0.00..20.62 rows=7 width=4) (actual time=0.004..0.007 rows=1 loops=1)
+  Filter: (name ~~* '%dolo%'::text)
+  Rows Removed by Filter: 11
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=79
+Planning Time: 0.261 ms
+Execution Time: 0.017 ms
+

@@ -1,0 +1,36 @@
+-- W1
+-- WRITE: create a medicine (POST /medicines, development only).
+INSERT INTO "Medicine" ("name", "form")
+VALUES ('Timing Medicine', 'TABLET')
+RETURNING "id", "name", "form";
+
+=== W1 run 1 ===
+Insert on "Medicine"  (cost=0.00..0.01 rows=1 width=68) (actual time=0.115..0.116 rows=1 loops=1)
+  Buffers: shared hit=65
+  ->  Result  (cost=0.00..0.01 rows=1 width=68) (actual time=0.013..0.013 rows=1 loops=1)
+        Buffers: shared hit=13
+Planning:
+  Buffers: shared hit=10
+Planning Time: 0.035 ms
+Execution Time: 0.131 ms
+
+=== W1 run 2 ===
+Insert on "Medicine"  (cost=0.00..0.01 rows=1 width=68) (actual time=0.111..0.111 rows=1 loops=1)
+  Buffers: shared hit=66
+  ->  Result  (cost=0.00..0.01 rows=1 width=68) (actual time=0.012..0.012 rows=1 loops=1)
+        Buffers: shared hit=13
+Planning:
+  Buffers: shared hit=10
+Planning Time: 0.033 ms
+Execution Time: 0.126 ms
+
+=== W1 run 3 ===
+Insert on "Medicine"  (cost=0.00..0.01 rows=1 width=68) (actual time=0.111..0.112 rows=1 loops=1)
+  Buffers: shared hit=66
+  ->  Result  (cost=0.00..0.01 rows=1 width=68) (actual time=0.011..0.011 rows=1 loops=1)
+        Buffers: shared hit=13
+Planning:
+  Buffers: shared hit=10
+Planning Time: 0.032 ms
+Execution Time: 0.126 ms
+

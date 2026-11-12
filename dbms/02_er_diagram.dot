@@ -1,0 +1,44 @@
+digraph velora_er {
+    graph [rankdir=LR, bgcolor="white", pad="0.5", nodesep="1.1", ranksep="1.6",
+           fontname="Helvetica", label="Velora ER diagram", labelloc="t", fontsize=18];
+    node [shape=plaintext, fontname="Helvetica", fontsize=11];
+    edge [fontname="Helvetica", fontsize=11, color="#5b6779", penwidth=1.2];
+
+    Medicine [label=<
+        <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#c6d1df">
+            <TR><TD BGCOLOR="#1d4ed8" ALIGN="CENTER"><FONT COLOR="white"><B>Medicine</B></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B> : integer <FONT COLOR="#5b6779">PK</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>name</B> : text <FONT COLOR="#5b6779">UK</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>form</B> : text</TD></TR>
+        </TABLE>>];
+
+    Pharmacy [label=<
+        <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#c6d1df">
+            <TR><TD BGCOLOR="#1d4ed8" ALIGN="CENTER"><FONT COLOR="white"><B>Pharmacy</B></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B> : integer <FONT COLOR="#5b6779">PK</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>name</B> : text</TD></TR>
+            <TR><TD ALIGN="LEFT"><B>area</B> : text</TD></TR>
+            <TR><TD ALIGN="LEFT"><B>address</B> : text</TD></TR>
+            <TR><TD ALIGN="LEFT"><B>phone</B> : text</TD></TR>
+            <TR><TD ALIGN="LEFT"><B>licenceNumber</B> : text <FONT COLOR="#5b6779">UK</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>status</B> : text <FONT COLOR="#5b6779">PENDING | VERIFIED</FONT></TD></TR>
+        </TABLE>>];
+
+    StockItem [label=<
+        <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#c6d1df">
+            <TR><TD BGCOLOR="#1d4ed8" ALIGN="CENTER"><FONT COLOR="white"><B>StockItem</B></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B> : integer <FONT COLOR="#5b6779">PK</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>pharmacyId</B> : integer <FONT COLOR="#5b6779">FK</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>medicineId</B> : integer <FONT COLOR="#5b6779">FK</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>quantity</B> : integer</TD></TR>
+            <TR><TD ALIGN="LEFT"><B>pricePaise</B> : integer</TD></TR>
+            <TR><TD ALIGN="LEFT"><B>createdAt</B> : timestamp</TD></TR>
+            <TR><TD ALIGN="LEFT"><B>updatedAt</B> : timestamp</TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="#5b6779">UK (pharmacyId, medicineId)</FONT></TD></TR>
+        </TABLE>>];
+
+    Pharmacy -> StockItem [dir=both, arrowtail=tee, arrowhead=crow,
+        taillabel="1", headlabel="0..*", labeldistance=1.8, labelangle=0];
+    Medicine -> StockItem [dir=both, arrowtail=tee, arrowhead=crow,
+        taillabel="1", headlabel="0..*", labeldistance=1.8, labelangle=0];
+}

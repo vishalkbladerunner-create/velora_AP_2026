@@ -1,0 +1,34 @@
+-- R4
+-- READ: duplicate-name check before creating or renaming a medicine
+-- (POST /medicines and PUT /medicines/:id).
+SELECT "id", "name", "form"
+FROM "Medicine"
+WHERE "name" = 'Dolo 650';
+
+=== R4 run 1 ===
+Index Scan using "Medicine_name_key" on "Medicine"  (cost=0.15..8.17 rows=1 width=68) (actual time=0.005..0.005 rows=1 loops=1)
+  Index Cond: (name = 'Dolo 650'::text)
+  Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=81
+Planning Time: 0.227 ms
+Execution Time: 0.018 ms
+
+=== R4 run 2 ===
+Index Scan using "Medicine_name_key" on "Medicine"  (cost=0.15..8.17 rows=1 width=68) (actual time=0.005..0.005 rows=1 loops=1)
+  Index Cond: (name = 'Dolo 650'::text)
+  Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=81
+Planning Time: 0.264 ms
+Execution Time: 0.018 ms
+
+=== R4 run 3 ===
+Index Scan using "Medicine_name_key" on "Medicine"  (cost=0.15..8.17 rows=1 width=68) (actual time=0.004..0.004 rows=1 loops=1)
+  Index Cond: (name = 'Dolo 650'::text)
+  Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=81
+Planning Time: 0.247 ms
+Execution Time: 0.016 ms
+

@@ -89,15 +89,18 @@ async function seedStock() {
       );
     }
 
-    // The schema has no compound unique on (pharmacyId, medicineId), so
-    // findUnique cannot be used here; findMany with take: 1 is the same
-    // check-then-create.
-    const existingRows = await prisma.stockItem.findMany({
-      where: { pharmacyId: pharmacy.id, medicineId: medicine.id },
-      take: 1,
+    // The schema has @@unique([pharmacyId, medicineId]), so the compound key
+    // can be used directly for this check-then-create.
+    const existingRow = await prisma.stockItem.findUnique({
+      where: {
+        pharmacyId_medicineId: {
+          pharmacyId: pharmacy.id,
+          medicineId: medicine.id,
+        },
+      },
     });
 
-    if (existingRows.length === 0) {
+    if (!existingRow) {
       await prisma.stockItem.create({
         data: {
           pharmacyId: pharmacy.id,
