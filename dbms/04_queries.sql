@@ -42,8 +42,8 @@ WHERE "medicineId" = 1;
 
 -- @R6
 -- READ: verified pharmacies with their stock and each medicine
--- (GET /pharmacies). The API groups these flat rows by pharmacy; Prisma's
--- include is the same nested read expressed as a join.
+-- (GET /pharmacies). The API groups these flat rows by pharmacy; this JOIN
+-- is the equivalent read for the nested response.
 SELECT
     p."id" AS pharmacy_id,
     p."name" AS pharmacy_name,
