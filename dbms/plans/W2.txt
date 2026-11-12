@@ -1,0 +1,40 @@
+-- W2
+-- WRITE: replace a medicine's name and form (PUT /medicines/:id).
+UPDATE "Medicine"
+SET "name" = 'Dolo 650', "form" = 'TABLET'
+WHERE "id" = 1
+RETURNING "id", "name", "form";
+
+=== W2 run 1 ===
+Update on "Medicine"  (cost=0.15..8.17 rows=1 width=70) (actual time=0.038..0.038 rows=1 loops=1)
+  Buffers: shared hit=8
+  ->  Index Scan using "Medicine_pkey" on "Medicine"  (cost=0.15..8.17 rows=1 width=70) (actual time=0.005..0.006 rows=1 loops=1)
+        Index Cond: (id = 1)
+        Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=81
+Planning Time: 0.299 ms
+Execution Time: 0.132 ms
+
+=== W2 run 2 ===
+Update on "Medicine"  (cost=0.15..8.17 rows=1 width=70) (actual time=0.031..0.032 rows=1 loops=1)
+  Buffers: shared hit=8
+  ->  Index Scan using "Medicine_pkey" on "Medicine"  (cost=0.15..8.17 rows=1 width=70) (actual time=0.006..0.006 rows=1 loops=1)
+        Index Cond: (id = 1)
+        Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=81
+Planning Time: 0.258 ms
+Execution Time: 0.108 ms
+
+=== W2 run 3 ===
+Update on "Medicine"  (cost=0.15..8.17 rows=1 width=70) (actual time=0.032..0.032 rows=1 loops=1)
+  Buffers: shared hit=8
+  ->  Index Scan using "Medicine_pkey" on "Medicine"  (cost=0.15..8.17 rows=1 width=70) (actual time=0.005..0.006 rows=1 loops=1)
+        Index Cond: (id = 1)
+        Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=81
+Planning Time: 0.262 ms
+Execution Time: 0.108 ms
+

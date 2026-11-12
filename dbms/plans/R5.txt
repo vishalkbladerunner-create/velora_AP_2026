@@ -1,0 +1,36 @@
+-- R5
+-- READ: stock rows that block deleting a medicine (DELETE /medicines/:id).
+SELECT "id"
+FROM "StockItem"
+WHERE "medicineId" = 1;
+
+=== R5 run 1 ===
+Seq Scan on "StockItem"  (cost=0.00..25.88 rows=6 width=4) (actual time=0.002..0.003 rows=4 loops=1)
+  Filter: ("medicineId" = 1)
+  Rows Removed by Filter: 16
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=82
+Planning Time: 0.243 ms
+Execution Time: 0.014 ms
+
+=== R5 run 2 ===
+Seq Scan on "StockItem"  (cost=0.00..25.88 rows=6 width=4) (actual time=0.002..0.003 rows=4 loops=1)
+  Filter: ("medicineId" = 1)
+  Rows Removed by Filter: 16
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=82
+Planning Time: 0.254 ms
+Execution Time: 0.014 ms
+
+=== R5 run 3 ===
+Seq Scan on "StockItem"  (cost=0.00..25.88 rows=6 width=4) (actual time=0.002..0.003 rows=4 loops=1)
+  Filter: ("medicineId" = 1)
+  Rows Removed by Filter: 16
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=82
+Planning Time: 0.259 ms
+Execution Time: 0.015 ms
+
