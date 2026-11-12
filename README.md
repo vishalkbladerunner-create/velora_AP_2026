@@ -144,6 +144,7 @@ erDiagram
 | --- | --- |
 | Medicine names are unique | `@unique` → index `Medicine_name_key`; checked first in JavaScript so a duplicate returns `400` |
 | Licence numbers are unique | `@unique` → index `Pharmacy_licenceNumber_key`; checked first in JavaScript |
+| One stock row per pharmacy–medicine pair | `@@unique([pharmacyId, medicineId])` → index `StockItem_pharmacyId_medicineId_key` |
 | A stock row must reference a real pharmacy and medicine | Foreign keys with `ON DELETE RESTRICT ON UPDATE CASCADE` |
 | A medicine that is still stocked cannot be deleted | Checked first in JavaScript (`400`) before the foreign key would raise |
 | New pharmacies start unverified | Column default `'PENDING'`; the API ignores any `status` in the request body |

@@ -165,20 +165,20 @@ The surrogate `id` columns are stable identifiers for the API. The natural keys 
 | `Medicine` | `medicine_name → form` | `medicine_name` | BCNF |
 | `StockItem` | `(licence_number, medicine_name) → quantity, price_paise, created_at, updated_at` | `(licence_number, medicine_name)` | BCNF |
 
-## 8. One constraint still missing
+## 8. The constraint that closes the gap
 
-The normalized key of `StockItem` is `(pharmacyId, medicineId)`, but the current Prisma model declares only `id` as the primary key and does **not** put a unique constraint on the pair. The database therefore allows two stock rows for the same medicine at the same pharmacy. That reintroduces the redundancy 2NF removed and makes “how many units does this pharmacy have?” ambiguous.
+At the time of CP1, the normalized key of `StockItem` was `(pharmacyId, medicineId)`, but the Prisma model declared only `id` as the primary key and did **not** put a unique constraint on the pair. The database therefore allowed two stock rows for the same medicine at the same pharmacy, which reintroduced the redundancy 2NF removed and made “how many units does this pharmacy have?” ambiguous.
 
-The fix is to add:
+CP2 closes that gap with:
 
 ```prisma
 @@unique([pharmacyId, medicineId])
 ```
 
-to `StockItem`, followed by a Prisma migration. `dbms/03_schema.sql` (CP2) will then declare the same unique constraint. This is a schema change, so it is not part of this CP1 document; it is recorded here so the normalization and the physical schema do not drift.
+and a migration (`20261112170000_stock_pair_unique`). `dbms/03_schema.sql` declares the same unique index, so the normalized key and the physical schema now agree.
 
 ## 9. Summary
 
 The register starts in UNF because `stock_lines` is a repeating group. Flattening it to one row per pharmacy–medicine pair gives 1NF. Removing the partial dependencies on `licence_number` and `medicine_name` gives `Pharmacy`, `Medicine` and `StockItem` in 2NF. None of the three has a transitive dependency, so they are in 3NF; every determinant is a candidate key, so they are also in BCNF.
 
-The three relations map directly to the Prisma models. One physical key — `StockItem(pharmacyId, medicineId)` — still needs to be enforced in the next migration.
+The three relations map directly to the Prisma models. The physical key `StockItem(pharmacyId, medicineId)` is now enforced by the CP2 migration.
