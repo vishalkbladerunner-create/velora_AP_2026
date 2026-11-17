@@ -9,7 +9,7 @@
 ![Prisma](https://img.shields.io/badge/Prisma_ORM-6.x-2D3748?logo=prisma&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12%2B-4169E1?logo=postgresql&logoColor=white)
 ![Module system](https://img.shields.io/badge/modules-CommonJS-F7DF1E?logo=javascript&logoColor=black)
-![Status](https://img.shields.io/badge/phase-P2%20data%20layer%20complete-blue)
+![Status](https://img.shields.io/badge/phase-P3%20operations%20close-blue)
 
 [Overview](#overview) · [Architecture](#architecture) · [Data model](#data-model) · [API reference](#api-reference) · [Getting started](#getting-started) · [Engineering decisions](#engineering-decisions) · [Tracker](https://velora-capstone.pages.dev/tracker/)
 
@@ -32,8 +32,10 @@ Velora is the CSA213 Advanced Programming capstone at Rishihood University. It i
 | Idempotent development seed from JSON fixtures | Done (P2) |
 | Medicines resource: list, case-insensitive filter, detail, development-only writes | Done (P2) |
 | Pharmacies resource: medicine search, area filter, detail with nested stock | Done (P2) |
-| Stock resource: list by pharmacy, add, update, delete | Planned (P3, commit 16) |
-| Contract sweep over every route, viva script and report | Planned (P3, commits 19–20) |
+| Stock resource: list by pharmacy, add, update, delete | Done (P3) |
+| PostgreSQL direct pg driver demo and pool verification | Done (P3) |
+| Search client linked to pharmacy detail page with stock table | Done (P3) |
+| Contract sweep over every route, viva script and report | Done (P3) |
 
 ---
 
@@ -47,13 +49,13 @@ flowchart LR
     subgraph proc["Node.js process (server/src)"]
         direction LR
         mw["Middleware chain<br/>express.json → logger → express.static"]
-        routers["Routers<br/>/health · /medicines · /pharmacies"]
+        routers["Routers<br/>/health · /medicines · /pharmacies · /stock"]
         ctrl["Controllers<br/>validation · status codes · shaping"]
         prisma["Prisma Client<br/>one shared instance"]
         nf["Terminal 404<br/>{ error }"]
     end
     db[("PostgreSQL<br/>Medicine · Pharmacy · StockItem")]
-    static["public/<br/>index.html · app.js · styles.css"]
+    static["public/<br/>index.html · pharmacy.html · app.js · pharmacy.js"]
 
     user -->|"HTTP"| mw
     mw -->|"static files"| static
@@ -72,8 +74,8 @@ The order in `server/src/app.js` matters, and each stage has one job:
 | --- | --- | --- |
 | 1 | `express.json()` | Parses JSON request bodies into `req.body` |
 | 2 | `logger` | Prints one line per request: `METHOD url` |
-| 3 | `express.static('public')` | Serves the search client; non-file paths fall through |
-| 4 | `/health`, `/medicines`, `/pharmacies` | Resource routers, one per file |
+| 3 | `express.static('public')` | Serves the search client and detail page; non-file paths fall through |
+| 4 | `/health`, `/medicines`, `/pharmacies`, `/stock` | Resource routers, one per file |
 | 5 | Terminal 404 | Sends `{ "error": "Route not found" }` and never calls `next()` |
 
 ### Request lifecycle: medicine search
@@ -187,6 +189,10 @@ No other status codes are used.
 | `GET` | `/pharmacies?medicine=&area=` | Search narrowed to one area | 200 |
 | `GET` | `/pharmacies/:id` | One verified pharmacy with all its stock and each medicine | 200, 400, 404 |
 | `POST` | `/pharmacies` | Create; the server sets `status` · *development only* | 201, 400 |
+| `GET` | `/stock?pharmacyId=` | Stock items for one pharmacy with medicine | 200, 400 |
+| `POST` | `/stock` | Create `{ pharmacyId, medicineId, quantity, pricePaise }` · *development only* | 201, 400, 404 |
+| `PUT` | `/stock/:id` | Replace `quantity` and `pricePaise` · *development only* | 200, 400, 404 |
+| `DELETE` | `/stock/:id` | Delete stock row · *development only* | 204, 400, 404 |
 
 > **Development-only writes.** The write routes are not registered when
 > `NODE_ENV=production`. This is a deployment guard, not authentication:
@@ -357,17 +363,19 @@ The fixtures model a realistic case in Sonipat, Haryana: four verified pharmacie
 │   ├── api-checks.md          Recorded manual API checks (expected vs actual)
 │   └── *.html                 Architecture and flowchart posters
 ├── server/
+│   ├── course-demos/          Course demos located inside server/ for package resolution
+│   │   └── pg/                L11    direct PostgreSQL pool, parameterized query ($1), vs Prisma
 │   ├── prisma/
 │   │   ├── schema.prisma      Data model (source of truth)
 │   │   ├── migrations/        Versioned SQL, committed
 │   │   ├── data/              Seed fixtures (JSON)
 │   │   └── dev-seed.js        Idempotent development seed
-│   ├── public/                Static client: index.html · app.js · styles.css
+│   ├── public/                Static client: index.html · pharmacy.html · app.js · pharmacy.js · styles.css
 │   └── src/
 │       ├── config/env.js      Read the environment once, fail fast
 │       ├── db/prisma.js       One shared PrismaClient (one connection pool)
 │       ├── middlewares/       Request logger
-│       ├── routes/            One router per resource
+│       ├── routes/            One router per resource (/health, /medicines, /pharmacies, /stock)
 │       ├── controllers/       Validation, Prisma calls, status codes
 │       ├── utils/             AppError, asyncHandler
 │       ├── app.js             Middleware order and mounting
@@ -408,14 +416,14 @@ Every endpoint is exercised with `curl` against a seeded database, and the resul
 | --- | --- | --- | --- |
 | t1 · Medicines read | Manav | list, filter, 400 / 404, create / replace / delete | 10 / 10 pass |
 | t2 · Pharmacies read | Manav | verified-only list and detail, area, medicine search, server-owned status, array query | 13 / 13 pass |
-| t3 · Stock write | Sayem | planned with commit 16 | none yet |
-| t4 · Envelope and codes | Yash | planned with commit 19 | none yet |
+| t3 · Stock write | Sayem | list by pharmacy, add, update, delete, 400 / 404 | 11 / 11 pass |
+| t4 · Envelope and codes | Yash | status codes (200, 201, 204, 400, 404, 500), error envelope, terminal 404 | 8 / 8 pass |
 
 ---
 
 ## Course demos
 
-The API cannot naturally show every lecture, so four small, independent programs do. Each has its own README with run instructions and expected output.
+The API cannot naturally show every lecture, so small, independent programs do. Each has its own README with run instructions and expected output.
 
 | Demo | Run | Lecture | Demonstrates |
 | --- | --- | --- | --- |
@@ -423,6 +431,7 @@ The API cannot naturally show every lecture, so four small, independent programs
 | Files and streams | `node course-demos/fs/index.js` | L2–L4 | user modules; `readFileSync` vs callback vs promise; streaming a 5,000-row CSV; `.pipe()` |
 | Event loop | `node course-demos/event-loop/index.js` | L2 | blocking `pbkdf2Sync` vs pooled `pbkdf2`; libuv's 4-thread pool; `UV_THREADPOOL_SIZE` |
 | Express routing | `node course-demos/express/server.js` (port 3002) | L7 | GET / POST / PUT / PATCH / DELETE, route params, query filters, JSON error envelope |
+| PostgreSQL pool | `node course-demos/pg/index.js 1` (from `server/`) | L11 | `new Pool`, parameterized `$1` query, quoted identifiers, comparison with Prisma |
 
 ---
 
