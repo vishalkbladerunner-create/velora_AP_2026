@@ -174,6 +174,16 @@ body {
   letter-spacing: -0.01em;
 }
 
+.card h2 a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.card h2 a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 .meta {
   margin: 0 0 12px;
   color: var(--ink-2);
@@ -239,5 +249,142 @@ body {
 
   .search-row button {
     width: 100%;
+  }
+}
+
+/* Pharmacy detail page */
+.page-nav {
+  margin-bottom: 18px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.detail-section {
+  display: grid;
+  gap: 16px;
+}
+
+.detail-card {
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.detail-header {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.detail-header h1 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
+.section-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+}
+
+.detail-info {
+  margin-bottom: 24px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  row-gap: 8px;
+  column-gap: 16px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.info-grid dt {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+.info-grid dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+.stock-section {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.stock-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  text-align: left;
+}
+
+.stock-table th {
+  padding: 10px 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  border-bottom: 2px solid var(--line);
+}
+
+.stock-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.stock-table td:nth-child(3),
+.stock-table td:nth-child(4),
+.stock-table th:nth-child(3),
+.stock-table th:nth-child(4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-table td:nth-child(4) {
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .detail-card {
+    padding: 18px 16px;
+  }
+
+  .detail-header h1 {
+    font-size: 20px;
+  }
+
+  .info-grid {
+    grid-template-columns: 80px 1fr;
+    font-size: 13px;
+  }
+
+  .stock-table th,
+  .stock-table td {
+    padding: 8px 6px;
+    font-size: 13px;
   }
 }
