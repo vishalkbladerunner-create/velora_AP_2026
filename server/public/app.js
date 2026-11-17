@@ -24,7 +24,10 @@ function renderResults(pharmacies) {
     item.className = 'card';
 
     const heading = document.createElement('h2');
-    heading.textContent = pharmacy.name;
+    const link = document.createElement('a');
+    link.href = '/pharmacy.html?id=' + encodeURIComponent(pharmacy.id);
+    link.textContent = pharmacy.name;
+    heading.appendChild(link);
     item.appendChild(heading);
 
     const meta = document.createElement('p');
