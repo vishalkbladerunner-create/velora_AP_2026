@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Velora — Pharmacy Detail</title>
+  <meta name="description" content="View pharmacy stock and details.">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/">Velora</a>
+      <p class="tagline">Find a verified pharmacy that has your medicine in stock.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-nav">
+      <a class="back-link" href="/">&larr; Back to search</a>
+    </div>
+
+    <section class="detail-section">
+      <p id="state-message" class="state state-loading" role="status">Loading pharmacy details…</p>
+
+      <article id="pharmacy-detail" class="detail-card" hidden>
+        <header class="detail-header">
+          <h1 id="pharmacy-name"></h1>
+          <p id="pharmacy-meta" class="meta"></p>
+        </header>
+
+        <section class="detail-info">
+          <h2 class="section-title">Pharmacy Details</h2>
+          <dl class="info-grid">
+            <dt>Area</dt>
+            <dd id="pharmacy-area"></dd>
+            <dt>Address</dt>
+            <dd id="pharmacy-address"></dd>
+            <dt>Phone</dt>
+            <dd id="pharmacy-phone"></dd>
+            <dt>Licence</dt>
+            <dd id="pharmacy-licence"></dd>
+          </dl>
+        </section>
+
+        <section class="stock-section">
+          <h2 class="section-title">Current Stock</h2>
+          <p id="stock-empty" class="hint" hidden>No stock records available for this pharmacy.</p>
+          <div class="table-wrap">
+            <table id="stock-table" class="stock-table">
+              <thead>
+                <tr>
+                  <th scope="col">Medicine</th>
+                  <th scope="col">Form</th>
+                  <th scope="col">Quantity</th>
+                  <th scope="col">Price</th>
+                </tr>
+              </thead>
+              <tbody id="stock-rows"></tbody>
+            </table>
+          </div>
+        </section>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">Velora · development build · search only, no accounts or reservations yet.</div>
+  </footer>
+
+  <script src="/pharmacy.js"></script>
+</body>
+</html>
