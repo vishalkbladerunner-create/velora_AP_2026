@@ -78,6 +78,7 @@ Presentation time: 12–14 minutes (under 15 minutes total).
 ### Check 4 — Uniform error envelope and status codes (t4)
 
 - **Presenter:** Yash
+- **Evidence run:** Sayem (commit 19, t4)
 - **Focus:** Predictable error shapes, terminal 404, query hardening, no stack trace leaks.
 - **Setup:** Server running.
 - **Commands:**
@@ -139,7 +140,7 @@ Presentation time: 12–14 minutes (under 15 minutes total).
   - pg demo execution:
     ```text
     pg rows: 5
-    { id: 1, pharmacyId: 1, medicineId: 1, quantity: 40, pricePaise: 3000, ... }
+    { id: 1, pharmacyId: 1, medicineId: 1, quantity: 40, pricePaise: 3200, ... }
     prisma rows: 5
     ```
 - **What it demonstrates:**
