@@ -103,6 +103,20 @@
         </section>
       </div>
 
+      <section id="stock-section" class="panel" hidden>
+        <div class="panel-head">
+          <div><h2>Your stock</h2><p class="muted">Only your pharmacy appears here.</p></div>
+          <span id="stock-count" class="count-pill"></span>
+        </div>
+        <p id="stock-empty" class="state state-empty" hidden>No stock rows yet.</p>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th scope="col">Medicine</th><th scope="col">Form</th><th scope="col">Quantity</th><th scope="col">Price</th><th scope="col">Actions</th></tr></thead>
+            <tbody id="stock-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="panel">
         <div class="panel-head">
           <div><h2>Medicines</h2><p class="muted">The shared catalogue.</p></div>
@@ -117,19 +131,6 @@
         </div>
       </section>
 
-      <section id="stock-section" class="panel" hidden>
-        <div class="panel-head">
-          <div><h2>Your stock</h2><p class="muted">Only your pharmacy appears here.</p></div>
-          <span id="stock-count" class="count-pill"></span>
-        </div>
-        <p id="stock-empty" class="state state-empty" hidden>No stock rows yet.</p>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th scope="col">Medicine</th><th scope="col">Form</th><th scope="col">Quantity</th><th scope="col">Price</th><th scope="col">Actions</th></tr></thead>
-            <tbody id="stock-rows"></tbody>
-          </table>
-        </div>
-      </section>
     </div>
 
     <dialog id="confirm-dialog" class="modal">

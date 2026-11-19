@@ -169,8 +169,8 @@ The following elements remain excluded or deliberately limited:
 | --- | --- | --- |
 | **Vishal** | Toolchain, Express Skeleton, Search Client, Documentation, Accounts and Holds, Pharmacy Ownership, Development Catalogue, Account Types and Editing | Architecture design, README, basic client, PR review, approved-exception auth/hold build, owner-only stock, typed accounts, profile/pharmacy/medicine/stock editing, responsive client |
 | **Manav** | Prisma Schema, Migration, Dev Seed, Medicines & Pharmacies APIs | Data model migrations, seed fixtures, t1/t2 test suites |
-| **Yash** | Error Utilities, Course Demos, Viva Presentation | HTTP/FS/Event-Loop demos; presents t4 |
-| **Sayem** | Stock API, Direct pg Demo, Client Detail Wiring, Contract Sweep, Viva & Report | Commits c16–c20: Stock CRUD, pg pool demo, pharmacy detail page, sweep audit, viva script and final report |
+| **Yash** | Error Utilities, Course Demos, Demo Presentation | HTTP/FS/Event-Loop demos; presents t4 |
+| **Sayem** | Stock API, Direct pg Demo, Client Detail Wiring, Contract Sweep & Report | Commits c16–c20: Stock CRUD, pg pool demo, pharmacy detail page, sweep audit and final report |
 
 ---
 
