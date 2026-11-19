@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Velora — Account</title>
+  <meta name="description" content="Create a Velora account and manage 30-minute stock holds.">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/">Velora</a>
+      <p class="tagline">Find a verified pharmacy that has your medicine in stock.</p>
+      <nav class="header-nav"><a href="/">Search</a><a href="/account.html">Account</a></nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-nav">
+      <a class="back-link" href="/">&larr; Back to search</a>
+    </div>
+
+    <h1 class="page-title">Your account</h1>
+    <p class="page-lede">Log in to reserve stock for 30 minutes at a verified pharmacy.</p>
+
+    <p id="account-message" class="state" role="status" hidden></p>
+
+    <section id="logged-out" class="auth-grid">
+      <form id="register-form" class="form-card" novalidate>
+        <h2 class="form-title">Create an account</h2>
+        <p class="hint">A mobile number and a password are enough.</p>
+
+        <label class="field-label" for="register-name">Name</label>
+        <input id="register-name" name="name" type="text" autocomplete="name" required>
+
+        <label class="field-label" for="register-phone">Mobile number</label>
+        <input id="register-phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="10 digits" required>
+
+        <label class="field-label" for="register-password">Password</label>
+        <input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+
+        <button type="submit" class="primary-button">Create account</button>
+      </form>
+
+      <form id="login-form" class="form-card" novalidate>
+        <h2 class="form-title">Log in</h2>
+        <p class="hint">Use the mobile number you registered.</p>
+
+        <label class="field-label" for="login-phone">Mobile number</label>
+        <input id="login-phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" required>
+
+        <label class="field-label" for="login-password">Password</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+
+        <button type="submit" class="primary-button">Log in</button>
+      </form>
+    </section>
+
+    <section id="logged-in" hidden>
+      <div class="account-bar">
+        <div>
+          <p class="account-name" id="user-name"></p>
+          <p class="hint" id="user-phone"></p>
+        </div>
+        <button type="button" id="logout-button" class="secondary-button">Log out</button>
+      </div>
+
+      <section class="holds-section" aria-labelledby="holds-heading">
+        <h2 id="holds-heading" class="section-title">Your holds</h2>
+        <p id="holds-empty" class="state state-empty" hidden>No holds yet. Reserve from a pharmacy page.</p>
+        <ul id="holds-list" class="hold-list"></ul>
+      </section>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">Velora · development build · search, accounts and 30-minute holds.</div>
+  </footer>
+
+  <script src="/account.js"></script>
+</body>
+</html>

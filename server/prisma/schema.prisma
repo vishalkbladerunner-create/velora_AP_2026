@@ -1,5 +1,6 @@
 // Prisma schema for the Velora API.
-// Three models: a Medicine, a Pharmacy, and the StockItem that links them.
+// Five models: a Medicine, a Pharmacy, the StockItem that links them, a User,
+// and the Hold that reserves stock for 30 minutes.
 // Docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -42,6 +43,30 @@ model StockItem {
   updatedAt  DateTime
   pharmacy   Pharmacy @relation(fields: [pharmacyId], references: [id])
   medicine   Medicine @relation(fields: [medicineId], references: [id])
+  holds      Hold[]
 
   @@unique([pharmacyId, medicineId])
+}
+
+// A Velora account. The password is stored only as a bcrypt hash.
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  phone        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  holds        Hold[]
+}
+
+// A 30-minute reservation against one stock row.
+model Hold {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  stockItemId Int
+  quantity    Int
+  status      String    @default("ACTIVE")
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  stockItem   StockItem @relation(fields: [stockItemId], references: [id])
 }

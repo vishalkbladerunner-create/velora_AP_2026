@@ -1,13 +1,13 @@
 # Velora — Capstone Viva Script
 
 CSA213 Advanced Programming · Rishihood University  
-Presentation time: 12–14 minutes (under 15 minutes total).
+Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes, fold Check 6 into the closing and keep Check 7 — accounts and holds are now the product differentiator.
 
 ## Roles & Presenters
 
 | Team Member | Domain | Viva Checks |
 | --- | --- | --- |
-| **Vishal** | Project Overview, Architecture, Search & Static Client | Introduction, Check 2, Check 5 |
+| **Vishal** | Project Overview, Architecture, Search, Accounts & Holds | Introduction, Check 2, Check 5, Check 7 |
 | **Manav** | Database Modeling, Prisma Schema, Seed, Medicines API | Check 1, Check 6 (Seed) |
 | **Sayem** | Stock API, Writes & Updates, Contract Sweep | Check 3, Architecture Summary |
 | **Yash** | Error Envelopes, Course Demos, PostgreSQL Driver Demo | Check 4, Check 6 (pg Demo) |
@@ -97,7 +97,7 @@ Presentation time: 12–14 minutes (under 15 minutes total).
   - Request 2: `HTTP/1.1 400 Bad Request` → `{"error":"Invalid query parameter: name[]"}`
   - Request 3: `HTTP/1.1 404 Not Found` → `{"error":"Route not found"}`
 - **What it demonstrates:**
-  - Restricted HTTP status code set (200, 201, 204, 400, 404, 500).
+  - Restricted HTTP status code set; 401/403 appear only on auth/hold routes (approved exception).
   - Absolute suppression of server stack traces and raw Prisma errors.
 - **Fallback:** Open [`docs/api-checks.md`](api-checks.md#contract-sweep--envelope-verification-commit-19-test-t4), Contract sweep section, rows 1, 7, 8.
 
@@ -150,8 +150,38 @@ Presentation time: 12–14 minutes (under 15 minutes total).
 
 ---
 
+### Check 7 — Accounts and 30-minute holds (t7 / t8)
+
+- **Presenter:** Vishal
+- **Focus:** Session authentication, bcrypt storage, owner-only holds, atomic stock decrement and expiry restore.
+- **Setup:** Server running, seeded database, `NODE_ENV=development`.
+- **Commands:**
+  ```bash
+  curl -c /tmp/velora.jar -X POST http://localhost:3000/auth/register \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"Asha","phone":"9000000001","password":"password123"}'
+
+  curl -b /tmp/velora.jar -X POST http://localhost:3000/holds \
+    -H 'Content-Type: application/json' \
+    -d '{"stockItemId":1,"quantity":2}'
+
+  curl -b /tmp/velora.jar http://localhost:3000/holds
+  ```
+- **Expected Output:**
+  - Register: `201` with the user and no `passwordHash`.
+  - Hold: `201`, status `ACTIVE`, `expiresAt` about 30 minutes ahead.
+  - List: one hold; pharmacy 1 stock drops by 2.
+  - `DELETE /holds/:id` returns `204` and restores the stock.
+- **What it demonstrates:**
+  - bcrypt hashing, an HttpOnly session cookie, `401` without a session and `403` for another user's hold.
+  - `$transaction` + `updateMany` so two users cannot reserve the same last strip; an expired hold returns its stock once.
+  - The approved exception recorded in `AGENTS.md`; the MemoryStore and missing CSRF token are stated as local-only limits.
+- **Fallback:** Open [`docs/api-checks.md`](api-checks.md#accounts-approved-exception-test-t7), Accounts and Holds sections.
+
+---
+
 ## Conclusion & Examiner Questions (~2 minutes)
 
 - Summarize the strict adherence to the CSA213 syllabus (L0–L9, L11, L12).
-- Highlight documented limitations (no authentication, no transaction reservations, no geospatial math, no React).
+- Highlight the approved exception (accounts and 30-minute holds), its local-only limits (MemoryStore, no CSRF token, no password reset), and the remaining exclusions (no pharmacist/admin roles, payments, geospatial math, React).
 - Invite examiner questions.

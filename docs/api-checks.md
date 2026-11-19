@@ -2,7 +2,8 @@
 
 Manual checks run with `curl` against a local PostgreSQL filled by
 `node prisma/dev-seed.js`. Success returns the bare resource; failure returns
-`{ "error": "..." }`. Allowed codes: 200, 201, 204, 400, 404, 500.
+`{ "error": "..." }`. Allowed codes: 200, 201, 204, 400, 401, 403, 404, 500.
+401 and 403 are used only by `/auth` and `/holds` (approved exception).
 
 ## Route index
 
@@ -25,6 +26,13 @@ Manual checks run with `curl` against a local PostgreSQL filled by
 | POST | `/stock` | full body | 201 | 201 | Stock section, row 4 |
 | PUT | `/stock/1` | quantity + price | 200 | 200 | Stock section, row 8 |
 | DELETE | `/stock/21` | none | 204 | 204 | Stock section, row 10 |
+| POST | `/auth/register` | name + phone + password | 201 | 201 | Accounts section, row 2 |
+| POST | `/auth/login` | phone + password | 200 | 200 | Accounts section, row 5 |
+| POST | `/auth/logout` | session cookie | 204 | 204 | Accounts section, row 8 |
+| GET | `/auth/me` | session cookie | 200 | 200 | Accounts section, row 7 |
+| GET | `/holds` | session cookie | 200 | 200 | Holds section, row 3 |
+| POST | `/holds` | stockItemId + quantity | 201 | 201 | Holds section, row 2 |
+| DELETE | `/holds/:id` | own active hold | 204 | 204 | Holds section, row 6 |
 
 ## Health (commit 1, test t0)
 
@@ -125,9 +133,44 @@ Run on 2026-11-17 by Sayem, verifying status codes, error shapes, and absence of
 | --- | --- | --- | --- | --- | --- |
 | 1 | Terminal 404 | `GET /nonexistent-route` | 404 | 404 | `{"error":"Route not found"}` |
 | 2 | Terminal 404 method | `POST /nonexistent` | 404 | 404 | `{"error":"Route not found"}` |
-| 3 | Approved code set | All endpoints | 200/201/204/400/404/500 | Confirmed | Only approved codes used; no 401, 403, 409, 422, or 429 |
+| 3 | Approved code set | All endpoints | 200/201/204/400/401/403/404/500 | Confirmed | 401/403 only on `/auth` and `/holds`; no 409, 422 or 429 |
 | 4 | Error envelope format | All 4xx and 5xx responses | `{"error":"..."}` | Confirmed | Never returns bare strings, HTML errors, or Prisma internals |
 | 5 | Stack trace suppression | Uncaught / database errors | 500 `{"error":"..."}` | Confirmed | Errors logged server-side via `console.error`; stack traces never leak |
 | 6 | 204 No Content body | `DELETE /medicines/:id`, `DELETE /stock/:id` | 204 empty | Confirmed | `res.status(204).send()` sends empty body |
 | 7 | Detail PENDING guard | `GET /pharmacies/5` | 404 | 404 | `{"error":"Pharmacy not found"}`: PENDING pharmacies treated as 404 |
 | 8 | Bracket query rejection | `GET /medicines?name[]=dolo`, `GET /pharmacies?medicine[]=dolo`, `GET /stock?pharmacyId[]=1` | 400 | 400 | `{"error":"Invalid query parameter: ..."}` |
+
+## Accounts (approved exception, test t7)
+
+Run on 2026-11-19 by Vishal against `velora_auth_test` (seeded with the 12/6/20 fixtures), `NODE_ENV=development`.
+
+| # | Method | Request | Expected | Actual | Body / note |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `GET` | `/auth/me` with no cookie | 401 | 401 | `{"error":"Authentication required"}` |
+| 2 | `POST` | `/auth/register` `{"name":"Asha","phone":"9000000001","password":"password123"}` | 201 | 201 | `{"id":1,"name":"Asha","phone":"9000000001","createdAt":"..."}`; no `passwordHash` in the body |
+| 3 | `POST` | `/auth/register` same phone again | 400 | 400 | `{"error":"Phone number already registered"}` |
+| 4 | `POST` | `/auth/register` password `short` | 400 | 400 | `{"error":"Provide a name, a 10-digit mobile number, and a password of 8 to 72 characters"}` |
+| 5 | `POST` | `/auth/login` correct phone and password | 200 | 200 | user object; session cookie set |
+| 6 | `POST` | `/auth/login` wrong password | 401 | 401 | `{"error":"Invalid phone or password"}` |
+| 7 | `GET` | `/auth/me` with the session cookie | 200 | 200 | `{"id":1,"name":"Asha","phone":"9000000001",...}` |
+| 8 | `POST` | `/auth/logout` with the session cookie | 204 | 204 | empty body |
+| 9 | `GET` | `/auth/me` after logout | 401 | 401 | session destroyed |
+
+The database stores `passwordHash` as a bcrypt hash (`$2b$...`); no endpoint returns it.
+
+## Holds (approved exception, test t8)
+
+Run on 2026-11-19 by Vishal against the same test database. Stock row 1 starts at 40 units.
+
+| # | Method | Request | Expected | Actual | Body / note |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `GET` | `/holds` with no cookie | 401 | 401 | `{"error":"Authentication required"}` |
+| 2 | `POST` | `/holds` `{"stockItemId":1,"quantity":2}` as Asha | 201 | 201 | hold `ACTIVE`, expires in 30 minutes; stock 40 → 38 |
+| 3 | `GET` | `/holds` as Asha | 200 | 200 | 1 hold |
+| 4 | `GET` | `/holds` as Bilal | 200 | 200 | 0 holds; the list is owner-scoped |
+| 5 | `DELETE` | `/holds/1` as Bilal | 403 | 403 | `{"error":"Not allowed to change this hold"}` |
+| 6 | `DELETE` | `/holds/1` as Asha | 204 | 204 | stock restored 38 → 40 |
+| 7 | `POST` | `/holds` `{"stockItemId":1,"quantity":9999}` | 400 | 400 | `{"error":"Not enough stock"}`; stock unchanged |
+| 8 | `POST` | `/holds` `{"stockItemId":18,"quantity":1}` (PENDING pharmacy 5) | 404 | 404 | `{"error":"Stock item not found"}` |
+| 9 | `GET` | `/holds` after moving a hold’s `expiresAt` into the past in the test database | 200 | 200 | hold `EXPIRED`; stock restored 37 → 40 |
+| 10 | `GET` | `/holds` again | 200 | 200 | stock still 40; the expiry restore runs once |
