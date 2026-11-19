@@ -34,7 +34,7 @@ Express App Middleware Chain (server/src/app.js)
   ├─ Custom Request Logger (server/src/middlewares/logger.js)
   ├─ express-session (HttpOnly, SameSite=Lax)
   ├─ express.static() [public/]
-  └─ Route Handlers (/health, /medicines, /pharmacies, /stock, /auth, /holds)
+  └─ Route Handlers (/health, /medicines, /pharmacies, /stock, /auth, /holds, /catalogue)
            │
            ▼
 Controllers (server/src/controllers/)
@@ -52,8 +52,8 @@ PostgreSQL Database (schema: public)
 1. **Middleware Pipeline ([`server/src/app.js`](../server/src/app.js)):**
    - Inbound HTTP payloads pass first through `express.json()`.
    - Logging is executed by custom middleware printing `METHOD URL` ([`server/src/middlewares/logger.js`](../server/src/middlewares/logger.js)).
-   - Static asset requests (such as `index.html`, `pharmacy.html`, `account.html`, `app.js`, and `styles.css`) are served from `server/public/` before API routing.
-   - Resource routers handle `/health`, `/medicines`, `/pharmacies`, `/stock`, `/auth`, and `/holds`.
+   - Static asset requests (such as `index.html`, `pharmacy.html`, `account.html`, `catalogue.html`, `app.js`, and `styles.css`) are served from `server/public/` before API routing.
+   - Resource routers handle `/health`, `/medicines`, `/pharmacies`, `/stock`, `/auth`, `/holds`, and the development `/catalogue` fixture.
    - Unmatched paths fall through to a terminal 404 handler that dispatches a structured JSON error `{ "error": "Route not found" }` and terminates the request without invoking `next()`.
 
 2. **Environment & Fail-Fast Configuration ([`server/src/config/env.js`](../server/src/config/env.js)):**
@@ -141,6 +141,7 @@ All API endpoints and operational workflows were verified through end-to-end com
 - **t6 · Seed Idempotency & pg Demo (Commit 17):** Running `node prisma/dev-seed.js` twice produces zero net creations on subsequent runs. `node course-demos/pg/index.js 1` proves identical row counts between raw `pg.Pool` and Prisma Client.
 - **t7 · Accounts:** 9/9 checks passing. Register, duplicate phone, login, bad password, `/auth/me`, logout, and a stored `$2b$` hash with no hash in any response.
 - **t8 · Holds:** 10/10 checks passing. Reserve, list, cross-user `403`, cancel with stock restore, insufficient stock, PENDING stock, expiry restore, and no double restore.
+- **t9 · Catalogue page:** 4/4 checks passing. Add a medicine, add a VERIFIED pharmacy through the development fixture, add stock in rupees, and confirm the new medicine appears in search.
 
 ---
 
@@ -149,7 +150,7 @@ All API endpoints and operational workflows were verified through end-to-end com
 The following elements remain excluded or deliberately limited:
 
 1. **Local-only sessions and holds:** Accounts use bcrypt and Express MemoryStore sessions; holds use `$transaction` + `updateMany`. Both are the approved exception recorded in `AGENTS.md`. The MemoryStore loses sessions on restart and is not a production store; there is no CSRF token, rate limiting, email verification or password reset.
-2. **No roles, admin workflow or payments:** There is no pharmacist or admin role, no licence-verification endpoint, no email/SMS and no payment integration. Catalogue write routes remain development-only.
+2. **No roles, admin workflow or payments:** There is no pharmacist or admin role, no licence-verification workflow, no email/SMS and no payment integration. Catalogue write routes remain development-only. The catalogue page’s `POST /catalogue/pharmacies` is a development fixture that creates a VERIFIED row; it is not a staff verification tool and is not mounted in production.
 3. **No Geolocation or Spatial Indexing:** Proximity matching uses textual area containment rather than GPS coordinates, PostGIS, or haversine calculations.
 4. **No MongoDB or Polyglot Persistence:** PostgreSQL and Prisma comprise the entire database tier; NoSQL engines are deliberately omitted.
 5. **No Client Frameworks or Heavy Toolchains:** The front-end contains no React, Vue, TypeScript, Tailwind, Webpack, or Babel. It utilizes standard DOM APIs with zero build steps.
@@ -161,11 +162,11 @@ The following elements remain excluded or deliberately limited:
 
 | Member | Branch Responsibilities | Key Deliverables |
 | --- | --- | --- |
-| **Vishal** | Toolchain, Express Skeleton, Search Client, Documentation, Accounts and Holds | Architecture design, README, basic client, PR review, approved-exception auth/hold build |
+| **Vishal** | Toolchain, Express Skeleton, Search Client, Documentation, Accounts and Holds, Development Catalogue | Architecture design, README, basic client, PR review, approved-exception auth/hold build, catalogue page |
 | **Manav** | Prisma Schema, Migration, Dev Seed, Medicines & Pharmacies APIs | Data model migrations, seed fixtures, t1/t2 test suites |
 | **Yash** | Error Utilities, Course Demos, Viva Presentation | HTTP/FS/Event-Loop demos; presents t4 |
 | **Sayem** | Stock API, Direct pg Demo, Client Detail Wiring, Contract Sweep, Viva & Report | Commits c16–c20: Stock CRUD, pg pool demo, pharmacy detail page, sweep audit, viva script and final report |
 
 ---
 
-*Report finalized on 19 November 2026 for CSA213 Advanced Programming.*
+*Report finalized on 20 November 2026 for CSA213 Advanced Programming.*

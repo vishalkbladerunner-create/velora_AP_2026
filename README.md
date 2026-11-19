@@ -37,6 +37,7 @@ Velora is the CSA213 Advanced Programming capstone at Rishihood University. It i
 | Search client linked to pharmacy detail page with stock table | Done (P3) |
 | Patient accounts: register, login, logout, session cookie | Done (approved exception) |
 | 30-minute stock holds: reserve, list, cancel, expiry restore | Done (approved exception) |
+| Development catalogue page: add medicines, verified pharmacies and stock | Done (development tool) |
 | Contract sweep over every route, viva script and report | Done (P3) |
 
 ---
@@ -51,13 +52,13 @@ flowchart LR
     subgraph proc["Node.js process (server/src)"]
         direction LR
         mw["Middleware chain<br/>express.json → logger → session → express.static"]
-        routers["Routers<br/>/health · /medicines · /pharmacies · /stock · /auth · /holds"]
+        routers["Routers<br/>/health · /medicines · /pharmacies · /stock · /auth · /holds · /catalogue"]
         ctrl["Controllers<br/>validation · auth guard · status codes · shaping"]
         prisma["Prisma Client<br/>one shared instance"]
         nf["Terminal 404<br/>{ error }"]
     end
     db[("PostgreSQL<br/>Medicine · Pharmacy · StockItem · User · Hold")]
-    static["public/<br/>index.html · pharmacy.html · account.html · app.js · pharmacy.js · account.js"]
+    static["public/<br/>index.html · pharmacy.html · account.html · catalogue.html · app.js · pharmacy.js · account.js · catalogue.js"]
 
     user -->|"HTTP"| mw
     mw -->|"static files"| static
@@ -220,6 +221,7 @@ The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma)
 | `POST` | `/stock` | Create `{ pharmacyId, medicineId, quantity, pricePaise }` · *development only* | 201, 400, 404 |
 | `PUT` | `/stock/:id` | Replace `quantity` and `pricePaise` · *development only* | 200, 400, 404 |
 | `DELETE` | `/stock/:id` | Delete stock row · *development only* | 204, 400, 404 |
+| `POST` | `/catalogue/pharmacies` | Development catalogue fixture: create a **VERIFIED** pharmacy | 201, 400 |
 | `POST` | `/auth/register` | Create `{ name, phone, password }` and start a session | 201, 400 |
 | `POST` | `/auth/login` | Log in with `{ phone, password }` | 200, 401 |
 | `POST` | `/auth/logout` | Destroy the current session | 204 |
@@ -232,6 +234,9 @@ The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma)
 > not registered when `NODE_ENV=production`. Accounts and holds are separate:
 > they are always mounted, but the session store is Express’s in-memory store,
 > so the current build is still local-only and must not be exposed publicly.
+> `POST /catalogue/pharmacies` is a development fixture that creates a VERIFIED
+> pharmacy so the catalogue page can stock it; the public `POST /pharmacies`
+> still starts every new pharmacy as PENDING.
 
 ### Examples
 
@@ -376,6 +381,15 @@ curl -b jar -X POST http://localhost:3000/holds \
 
 Open **http://localhost:3000/account.html** to see the hold, or **/pharmacy.html?id=1** to reserve from the stock table.
 
+## Catalogue page (development only)
+
+Open **http://localhost:3000/catalogue.html** to add medicines, verified pharmacies and stock from the browser. The page calls the same development-only routes as the API.
+
+- Adding a medicine makes it available to the stock form immediately.
+- Adding a pharmacy through the page uses `POST /catalogue/pharmacies`, a development fixture that creates the row as **VERIFIED** so it can be stocked and searched. The public `POST /pharmacies` still starts every pharmacy as **PENDING**.
+- Adding stock takes rupees in the form and converts them to integer paise before the request.
+- None of these write routes exist when `NODE_ENV=production`.
+
 ---
 
 ## Development seed
@@ -420,12 +434,12 @@ The fixtures model a realistic case in Sonipat, Haryana: four verified pharmacie
 │   │   ├── migrations/        Versioned SQL, committed
 │   │   ├── data/              Seed fixtures (JSON)
 │   │   └── dev-seed.js        Idempotent development seed
-│   ├── public/                Static client: index.html · pharmacy.html · account.html · app.js · pharmacy.js · account.js · styles.css
+│   ├── public/                Static client: index.html · pharmacy.html · account.html · catalogue.html · app.js · pharmacy.js · account.js · catalogue.js · styles.css
 │   └── src/
 │       ├── config/env.js      Read the environment once, fail fast
 │       ├── db/prisma.js       One shared PrismaClient (one connection pool)
 │       ├── middlewares/       Request logger and session guard
-│       ├── routes/            One router per resource (/health, /medicines, /pharmacies, /stock, /auth, /holds)
+│       ├── routes/            One router per resource (/health, /medicines, /pharmacies, /stock, /auth, /holds, /catalogue)
 │       ├── controllers/       Validation, Prisma calls, status codes
 │       ├── utils/             AppError, asyncHandler
 │       ├── app.js             Middleware order and mounting
@@ -474,6 +488,7 @@ Every endpoint is exercised with `curl` against a seeded database, and the resul
 | t4 · Envelope and codes | Sayem (Yash presents) | status codes, error envelope, terminal 404, bracket query | 8 / 8 pass |
 | t7 · Accounts | Vishal | register, duplicate, login, bad password, me, logout, password hash | 9 / 9 pass |
 | t8 · Holds | Vishal | reserve, list, cross-user 403, cancel, insufficient stock, PENDING stock, expiry restore | 10 / 10 pass |
+| t9 · Catalogue page | Vishal | add medicine, verified pharmacy, stock, search hit | 4 / 4 pass |
 
 ---
 
@@ -494,6 +509,8 @@ The API cannot naturally show every lecture, so small, independent programs do. 
 ## Scope and non-goals
 
 One exception is approved and recorded in `AGENTS.md`: patient accounts and 30-minute stock holds (bcrypt, express-session, 401/403, Prisma `updateMany` + `$transaction`). Everything else stays within L1–L12. Still out of scope: pharmacist/admin roles, email verification or password reset, email/SMS, payments, MongoDB, a React client, geolocation and distance sorting, and cloud deployment.
+
+The catalogue page is a development tool, not a staff role or a verification workflow. Its `POST /catalogue/pharmacies` fixture creates a VERIFIED row so the page can be demonstrated end to end; the public create route still starts PENDING, and the fixture is not mounted in production.
 
 The account/hold build is local-only: Express’s MemoryStore sessions are lost on restart, there is no CSRF token or rate limiting (SameSite=Lax is the only guard), holds expire lazily on the next `/holds` request, and there is no HTTPS locally.
 
