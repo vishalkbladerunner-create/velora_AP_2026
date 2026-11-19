@@ -39,15 +39,20 @@ Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes,
 
 - **Presenter:** Vishal
 - **Focus:** Join entity query, in-stock filtering, and excluding unverified pharmacies.
-- **Setup:** Server running on port 3000.
-- **Command:**
+- **Setup:** Server running on port 3000 and a signed-in session — live search is account-only.
+- **Commands:**
   ```bash
-  curl -i "http://localhost:3000/pharmacies?medicine=dolo"
+  curl -c /tmp/velora.jar -X POST http://localhost:3000/auth/login \
+    -H 'Content-Type: application/json' \
+    -d '{"phone":"9000000001","password":"password123"}'
+
+  curl -b /tmp/velora.jar "http://localhost:3000/pharmacies?medicine=dolo"
   ```
 - **Expected Output:**
   - Status `HTTP/1.1 200 OK`
-  - Body: List of 3 verified pharmacies (City Care Pharmacy, Sanjeevani Medicos, Highway 24x7) ordered by `pricePaise` ascending.
+  - Body: 4 verified pharmacies (City Care Pharmacy, Kundli Health Store, Sanjeevani Medicos, Highway 24x7) ordered by `pricePaise` ascending, each carrying its `distanceKm`.
   - Zero-stock rows and `PENDING` pharmacies (such as "Apna Medical Hall") are strictly excluded from the output.
+  - The same request without the cookie returns `401 {"error":"Authentication required"}`.
 - **What it demonstrates:**
   - Business requirement: Emergency discovery only returns pharmacies with physical stock ready for dispensing.
 - **Fallback:** Open [`docs/api-checks.md`](api-checks.md#pharmacies-commit-15-test-t2), Pharmacies section, row 3.
@@ -129,14 +134,16 @@ Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes,
 
 - **Presenter:** Vishal
 - **Focus:** Responsive client, navigation from search results to pharmacy detail page, DOM safety.
-- **Setup:** Open browser at `http://localhost:3000`.
+- **Setup:** Open browser at `http://localhost:3000` and sign in as a customer.
 - **Steps:**
-  1. Type `dolo` into the search field and submit.
-  2. Point out that the 3 verified pharmacy cards appear with pricing and matching stock.
-  3. Click on the pharmacy name link (e.g. `City Care Pharmacy`).
-  4. Observe navigation to `/pharmacy.html?id=2`.
-  5. Point out the rendered details: name, area, address, phone, licence number, and tabular current stock breakdown.
-  6. Navigate directly to `/pharmacy.html?id=5` to show graceful error handling ("Pharmacy not found.") with a functional back link.
+  1. Logged out, point out the “Log in to search” panel instead of the search form.
+  2. Sign in, type `dolo` into the search field and submit.
+  3. Point out that the results slide into view: 4 verified pharmacy cards with price, quantity and distance.
+  4. Click on the pharmacy name link (e.g. `City Care Pharmacy`).
+  5. Observe navigation to `/pharmacy.html?id=2`.
+  6. Point out the rendered details: name, area, address, distance, phone, licence number, and tabular current stock breakdown.
+  7. Each quantity stepper starts at `0` and **Reserve** stays disabled until it reaches `1`.
+  8. Navigate directly to `/pharmacy.html?id=5` to show graceful error handling ("Pharmacy not found.") with a functional back link.
 - **What it demonstrates:**
   - Zero build step, static client served via `express.static`.
   - Safe DOM manipulation using `textContent` and `document.createElement`, strictly avoiding `innerHTML` interpolation of API data.
@@ -158,12 +165,12 @@ Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes,
   node course-demos/pg/index.js 1
   ```
 - **Expected Output:**
-  - Seed execution: Reports `created: 0` across all models (12 medicines, 6 pharmacies, 20 stock rows existing), confirming idempotency.
+  - Seed execution: Reports `created: 0` across all models (18 medicines, 6 pharmacies, 31 stock rows existing), confirming idempotency.
   - pg demo execution:
     ```text
-    pg rows: 5
+    pg rows: 7
     { id: 1, pharmacyId: 1, medicineId: 1, quantity: 40, pricePaise: 3200, ... }
-    prisma rows: 5
+    prisma rows: 7
     ```
 - **What it demonstrates:**
   - L3–L4 asynchronous file operations with `fs.promises.readFile`.
@@ -181,7 +188,7 @@ Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes,
   ```bash
   curl -c /tmp/velora.jar -X POST http://localhost:3000/auth/register \
     -H 'Content-Type: application/json' \
-    -d '{"name":"Asha","phone":"9000000001","password":"password123"}'
+    -d '{"name":"Asha","phone":"9000000001","address":"12 Model Town, Sonipat","password":"password123","accountType":"CUSTOMER"}'
 
   curl -b /tmp/velora.jar -X POST http://localhost:3000/holds \
     -H 'Content-Type: application/json' \
@@ -200,6 +207,7 @@ Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes,
   - The approved exception recorded in `AGENTS.md`; the MemoryStore and missing CSRF token are stated as local-only limits.
   - **Pharmacy ownership:** the account form can register one pharmacy; `GET /pharmacies/mine` returns it, and `/catalogue.html` lets the owner add stock only to that pharmacy. Another pharmacy is `403`.
   - The catalogue is a development tool, not a staff role; the public pharmacy create route still starts PENDING, and the development build auto-verifies the account's pharmacy.
+  - **Account types and editing:** signup records `CUSTOMER` or `PHARMACY`. A customer gets `403` on medicine and stock writes, so the hidden catalogue link is presentation only. The profile form edits name, mobile and address; the pharmacy form edits name, area, address and phone; medicine and stock rows edit and delete from the catalogue.
 - **Fallback:** Open [`docs/api-checks.md`](api-checks.md#accounts-approved-exception-test-t7), Accounts, Holds, Pharmacy ownership and Catalogue sections.
 
 ---
@@ -207,5 +215,5 @@ Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes,
 ## Conclusion & Examiner Questions (~2 minutes)
 
 - Summarize the strict adherence to the CSA213 syllabus (L0–L9, L11, L12).
-- Highlight the approved exception (accounts and 30-minute holds), its local-only limits (MemoryStore, no CSRF token, no password reset), and the remaining exclusions (no pharmacist/admin roles, payments, geospatial math, React).
+- Highlight the approved exception (accounts and 30-minute holds), its local-only limits (MemoryStore, no CSRF token, no password reset), and the remaining exclusions (no admin role, payments, GPS/geospatial calculation, React). State plainly that the distance label is a stored sample value, not a measurement.
 - Invite examiner questions.

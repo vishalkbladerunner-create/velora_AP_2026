@@ -1,5 +1,6 @@
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
+const nextPath = '/account.html?next=' + encodeURIComponent(window.location.pathname + window.location.search);
 
 const message = document.getElementById('state-message');
 const detail = document.getElementById('pharmacy-detail');
@@ -8,20 +9,16 @@ const metaEl = document.getElementById('pharmacy-meta');
 const areaEl = document.getElementById('pharmacy-area');
 const addressEl = document.getElementById('pharmacy-address');
 const phoneEl = document.getElementById('pharmacy-phone');
+const phoneLink = document.getElementById('pharmacy-phone-link');
+const distanceEl = document.getElementById('pharmacy-distance');
 const licenceEl = document.getElementById('pharmacy-licence');
-const stockEmptyEl = document.getElementById('stock-empty');
 const stockTable = document.getElementById('stock-table');
 const stockRows = document.getElementById('stock-rows');
-const reserveMessage = document.getElementById('reserve-message');
+const stockEmpty = document.getElementById('stock-empty');
+const stockSummary = document.getElementById('stock-summary');
+const accountLink = document.getElementById('account-link');
 
 let currentUser = null;
-
-fetch('/auth/me')
-  .then((response) => (response.ok ? response.json() : null))
-  .then((user) => {
-    currentUser = user;
-  })
-  .catch(() => {});
 
 function showError(text) {
   message.textContent = text;
@@ -30,55 +27,131 @@ function showError(text) {
   detail.hidden = true;
 }
 
-function formatPrice(paise) {
-  return '₹' + (paise / 100).toFixed(2);
+function setAccountLink() {
+  if (currentUser) {
+    accountLink.textContent = 'Manage your account';
+    accountLink.href = '/account.html';
+  } else {
+    accountLink.textContent = 'Log in to reserve';
+    accountLink.href = nextPath;
+  }
 }
 
-function showReserve(text, kind) {
-  reserveMessage.textContent = text;
-  reserveMessage.className = 'state state-' + kind;
-  reserveMessage.hidden = false;
+fetch('/auth/me')
+  .then((response) => (response.ok ? response.json() : null))
+  .then((user) => {
+    currentUser = user;
+    setAccountLink();
+  })
+  .catch(() => setAccountLink());
+
+function makeStepper(max) {
+  const wrap = document.createElement('div');
+  wrap.className = 'stepper';
+
+  const minus = document.createElement('button');
+  minus.type = 'button';
+  minus.className = 'stepper-btn';
+  minus.textContent = '−';
+  minus.setAttribute('aria-label', 'Decrease quantity');
+
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'stepper-input';
+  input.min = '0';
+  input.max = String(max);
+  input.value = '0';
+  input.setAttribute('aria-label', 'Quantity to reserve');
+
+  const plus = document.createElement('button');
+  plus.type = 'button';
+  plus.className = 'stepper-btn';
+  plus.textContent = '+';
+  plus.setAttribute('aria-label', 'Increase quantity');
+
+  minus.addEventListener('click', () => {
+    input.value = String(Math.max(0, Number(input.value) - 1));
+    input.dispatchEvent(new Event('input'));
+  });
+  plus.addEventListener('click', () => {
+    input.value = String(Math.min(max, Number(input.value) + 1));
+    input.dispatchEvent(new Event('input'));
+  });
+  input.addEventListener('input', () => {
+    const value = Number(input.value);
+    if (!Number.isInteger(value) || value < 0) {
+      input.value = '0';
+    } else if (value > max) {
+      input.value = String(max);
+    }
+  });
+
+  wrap.append(minus, input, plus);
+  return { wrap, input };
 }
 
-async function reserve(stockItemId, quantityValue) {
+async function reserve(stockItemId, quantityValue, button) {
   if (!currentUser) {
-    window.location.href = '/account.html';
+    window.location.href = nextPath;
     return;
   }
 
   const quantity = Number(quantityValue);
 
   if (!Number.isInteger(quantity) || quantity <= 0) {
-    showReserve('Choose a positive quantity.', 'error');
+    Velora.toast('Choose a positive quantity.', 'error');
     return;
   }
 
-  const response = await fetch('/holds', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ stockItemId: stockItemId, quantity: quantity }),
-  });
-
-  if (response.status === 401) {
-    window.location.href = '/account.html';
-    return;
-  }
-
-  let body = {};
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Reserving…';
 
   try {
-    body = await response.json();
+    const response = await fetch('/holds', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stockItemId: stockItemId, quantity: quantity }),
+    });
+
+    if (response.status === 401) {
+      window.location.href = nextPath;
+      return;
+    }
+
+    let body = {};
+    try {
+      body = await response.json();
+    } catch (error) {
+      body = {};
+    }
+
+    if (!response.ok) {
+      Velora.toast(body.error || 'Could not reserve the stock.', 'error');
+      button.disabled = false;
+      button.textContent = original;
+      return;
+    }
+
+    Velora.toast('Reserved ' + quantity + '. Pick it up within 30 minutes.', 'success');
+    await load();
   } catch (error) {
-    body = {};
+    Velora.toast('Could not reach the API.', 'error');
+    button.disabled = false;
+    button.textContent = original;
   }
+}
 
-  if (!response.ok) {
-    showReserve(body.error || 'Could not reserve the stock.', 'error');
-    return;
+function appendCell(row, label, content) {
+  const cell = document.createElement('td');
+  cell.setAttribute('data-label', label);
+  if (content instanceof Node) {
+    cell.appendChild(content);
+  } else {
+    cell.textContent = content;
   }
-
-  showReserve('Reserved ' + quantity + '. Pick it up within 30 minutes.', 'success');
-  await load();
+  row.appendChild(cell);
+  return cell;
 }
 
 function render(pharmacy) {
@@ -87,62 +160,81 @@ function render(pharmacy) {
   areaEl.textContent = pharmacy.area;
   addressEl.textContent = pharmacy.address;
   phoneEl.textContent = pharmacy.phone;
+  phoneLink.href = 'tel:' + pharmacy.phone;
+  distanceEl.textContent = Number(pharmacy.distanceKm || 0).toFixed(1) + ' km';
+  distanceEl.title = 'Sample distance from the stored account address';
   licenceEl.textContent = pharmacy.licenceNumber;
+  stockSummary.textContent = pharmacy.stock.length + (pharmacy.stock.length === 1 ? ' item' : ' items');
 
   stockRows.replaceChildren();
 
   if (!pharmacy.stock || pharmacy.stock.length === 0) {
-    stockEmptyEl.hidden = false;
+    stockEmpty.hidden = false;
     stockTable.hidden = true;
   } else {
-    stockEmptyEl.hidden = true;
+    stockEmpty.hidden = true;
     stockTable.hidden = false;
 
     pharmacy.stock.forEach((row) => {
       const tr = document.createElement('tr');
 
-      const tdMedicine = document.createElement('td');
-      tdMedicine.textContent = row.medicine ? row.medicine.name : 'Unknown';
-      tr.appendChild(tdMedicine);
+      const medicine = document.createElement('td');
+      medicine.setAttribute('data-label', 'Medicine');
+      medicine.className = 'med-name';
+      medicine.textContent = row.medicine ? row.medicine.name : 'Unknown';
+      tr.appendChild(medicine);
 
-      const tdForm = document.createElement('td');
-      tdForm.textContent = row.medicine ? row.medicine.form : '—';
-      tr.appendChild(tdForm);
+      const form = document.createElement('td');
+      form.setAttribute('data-label', 'Form');
+      form.className = 'med-form';
+      form.textContent = row.medicine ? row.medicine.form : '—';
+      tr.appendChild(form);
 
-      const tdQty = document.createElement('td');
-      tdQty.textContent = String(row.quantity);
-      tr.appendChild(tdQty);
+      const quantityWrap = document.createElement('div');
+      quantityWrap.textContent = String(row.quantity);
+      if (row.quantity > 0 && row.quantity <= 5) {
+        const low = document.createElement('span');
+        low.className = 'badge-low';
+        low.textContent = 'Only ' + row.quantity + ' left';
+        quantityWrap.textContent = '';
+        quantityWrap.appendChild(low);
+      }
+      appendCell(tr, 'Available', quantityWrap);
 
-      const tdPrice = document.createElement('td');
-      tdPrice.textContent = formatPrice(row.pricePaise);
-      tr.appendChild(tdPrice);
+      appendCell(tr, 'Price', Velora.formatPrice(row.pricePaise));
 
-      const tdReserve = document.createElement('td');
-      tdReserve.className = 'reserve-cell';
+      const reserveCell = document.createElement('td');
+      reserveCell.setAttribute('data-label', 'Reserve');
+      reserveCell.className = 'reserve-cell';
 
       if (row.quantity > 0) {
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.min = '1';
-        input.max = String(row.quantity);
-        input.value = '1';
-        input.className = 'reserve-qty';
-        input.setAttribute('aria-label', 'Quantity to reserve of ' + (row.medicine ? row.medicine.name : 'medicine'));
-
+        const controls = document.createElement('div');
+        controls.className = 'reserve-controls';
+        const stepper = makeStepper(row.quantity);
         const button = document.createElement('button');
         button.type = 'button';
-        button.className = 'reserve-btn';
+        button.className = 'btn btn-small btn-primary';
         button.textContent = 'Reserve';
-        button.addEventListener('click', () => reserve(row.id, input.value));
+        button.disabled = true;
 
-        tdReserve.appendChild(input);
-        tdReserve.appendChild(button);
+        const syncButton = () => {
+          const value = Number(stepper.input.value);
+          button.disabled = !Number.isInteger(value) || value < 1;
+        };
+        stepper.input.addEventListener('input', syncButton);
+        syncButton();
+
+        button.addEventListener('click', () => reserve(row.id, stepper.input.value, button));
+        controls.append(stepper.wrap, button);
+        reserveCell.appendChild(controls);
       } else {
-        tdReserve.textContent = '—';
+        const out = document.createElement('span');
+        out.className = 'out-of-stock';
+        out.textContent = 'Out of stock';
+        reserveCell.appendChild(out);
       }
 
-      tr.appendChild(tdReserve);
-
+      tr.appendChild(reserveCell);
       stockRows.appendChild(tr);
     });
   }
