@@ -45,7 +45,7 @@ Two account types share the same system. A **customer** searches, reserves stock
 | Profile editing: name, mobile number and address | Done |
 | Pharmacy details editing: name, area, address and phone | Done |
 | Seeded distance on each pharmacy, shown beside search results | Done (sample data) |
-| Contract sweep over every route, viva script and report | Done (P3) |
+| Contract sweep over every route, README and report | Done (P3) |
 
 ---
 
@@ -555,7 +555,7 @@ The account/hold build is local-only: Express’s MemoryStore sessions are lost 
 | **Vishal** | Toolchain, Express skeleton, configuration, static client, README, accounts and holds *(repository owner)* |
 | **Manav** | Prisma schema and migration, development seed, Medicines and Pharmacies APIs |
 | **Yash** | Error utilities and the course demos (http, fs, event loop, Express routing) |
-| **Sayem** | Stock API, `pg` driver demo, client wiring, contract sweep, viva script and report |
+| **Sayem** | Stock API, `pg` driver demo, client wiring, contract sweep and report |
 
 - **Branches:** `feat/<n>-<slug>`, `chore/<n>-<slug>`, `docs/<n>-<slug>`, one per tracked commit.
 - **Commit format:** a conventional subject, then lecture tags, files and phase:
