@@ -1,5 +1,5 @@
 // Read the environment once at start-up so a missing key fails loudly.
-const required = ['DATABASE_URL'];
+const required = ['DATABASE_URL', 'SESSION_SECRET'];
 const missing = [];
 
 required.forEach((key) => {
@@ -20,6 +20,7 @@ if (!Number.isInteger(port)) {
 
 const config = {
   databaseUrl: process.env.DATABASE_URL,
+  sessionSecret: process.env.SESSION_SECRET,
   port: port,
   nodeEnv: process.env.NODE_ENV || 'development',
 };

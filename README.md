@@ -21,7 +21,7 @@
 
 When someone needs a medicine urgently, typically late at night, in an unfamiliar area or for a prescription that is hard to find, the usual approach is to phone or visit pharmacies one at a time. Velora replaces that with one search: type a medicine name and get back only **verified** pharmacies that currently hold it **with stock above zero**, each listed with the matching items, quantities and prices.
 
-Velora is the CSA213 Advanced Programming capstone at Rishihood University. It is a REST API built with **Node.js, Express 5, Prisma ORM and PostgreSQL**, plus a static client served by the same process. The scope is deliberately bounded by the course lectures (L1–L12), so the system shows a small, complete and manually verified core rather than a broad one.
+Velora is the CSA213 Advanced Programming capstone at Rishihood University. It is a REST API built with **Node.js, Express 5, Prisma ORM and PostgreSQL**, plus a static client served by the same process. The scope stays within the course lectures (L1–L12) except for one approved exception: patient accounts and 30-minute stock holds, recorded in `AGENTS.md`. Everything else remains a small, complete and manually verified core rather than a broad one.
 
 | Capability | Status |
 | --- | --- |
@@ -35,6 +35,8 @@ Velora is the CSA213 Advanced Programming capstone at Rishihood University. It i
 | Stock resource: list by pharmacy, add, update, delete | Done (P3) |
 | PostgreSQL direct pg driver demo and pool verification | Done (P3) |
 | Search client linked to pharmacy detail page with stock table | Done (P3) |
+| Patient accounts: register, login, logout, session cookie | Done (approved exception) |
+| 30-minute stock holds: reserve, list, cancel, expiry restore | Done (approved exception) |
 | Contract sweep over every route, viva script and report | Done (P3) |
 
 ---
@@ -48,14 +50,14 @@ flowchart LR
     user(["Browser"])
     subgraph proc["Node.js process (server/src)"]
         direction LR
-        mw["Middleware chain<br/>express.json → logger → express.static"]
-        routers["Routers<br/>/health · /medicines · /pharmacies · /stock"]
-        ctrl["Controllers<br/>validation · status codes · shaping"]
+        mw["Middleware chain<br/>express.json → logger → session → express.static"]
+        routers["Routers<br/>/health · /medicines · /pharmacies · /stock · /auth · /holds"]
+        ctrl["Controllers<br/>validation · auth guard · status codes · shaping"]
         prisma["Prisma Client<br/>one shared instance"]
         nf["Terminal 404<br/>{ error }"]
     end
-    db[("PostgreSQL<br/>Medicine · Pharmacy · StockItem")]
-    static["public/<br/>index.html · pharmacy.html · app.js · pharmacy.js"]
+    db[("PostgreSQL<br/>Medicine · Pharmacy · StockItem · User · Hold")]
+    static["public/<br/>index.html · pharmacy.html · account.html · app.js · pharmacy.js · account.js"]
 
     user -->|"HTTP"| mw
     mw -->|"static files"| static
@@ -110,12 +112,14 @@ sequenceDiagram
 
 ## Data model
 
-Three tables. `StockItem` is the join entity that resolves the many-to-many relation between pharmacies and medicines and carries the attributes of that relation: quantity and price.
+Five tables. `StockItem` is the join entity that resolves the many-to-many relation between pharmacies and medicines and carries the attributes of that relation: quantity and price. `Hold` reserves part of one stock row for one user for 30 minutes.
 
 ```mermaid
 erDiagram
     PHARMACY ||--o{ STOCKITEM : holds
     MEDICINE ||--o{ STOCKITEM : "stocked as"
+    USER ||--o{ HOLD : places
+    STOCKITEM ||--o{ HOLD : "reserved by"
 
     MEDICINE {
         int id PK
@@ -140,6 +144,22 @@ erDiagram
         datetime createdAt
         datetime updatedAt
     }
+    USER {
+        int id PK
+        string name
+        string phone UK
+        string passwordHash "bcrypt only"
+        datetime createdAt
+    }
+    HOLD {
+        int id PK
+        int userId FK
+        int stockItemId FK
+        int quantity
+        string status "ACTIVE, CANCELLED or EXPIRED"
+        datetime expiresAt
+        datetime createdAt
+    }
 ```
 
 | Rule | Where it is enforced |
@@ -151,6 +171,10 @@ erDiagram
 | A medicine that is still stocked cannot be deleted | Checked first in JavaScript (`400`) before the foreign key would raise |
 | New pharmacies start unverified | Column default `'PENDING'`; the API ignores any `status` in the request body |
 | Money never uses floating point | Prices are stored as integer **paise**; the client formats `₹` |
+| One account per mobile number | `User.phone` is `@unique`; the password is stored only as a bcrypt hash |
+| A hold belongs to one user and one stock row | Foreign keys on `Hold`; the owner is checked before a cancel |
+| A hold never overdraws stock | `$transaction` + `updateMany` checks `quantity >= requested` before the decrement |
+| Expired stock returns to the shelf | The next hold request marks due holds `EXPIRED` and increments the stock row once |
 
 The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma). The generated SQL is committed under [`server/prisma/migrations/`](server/prisma/migrations/), so every environment builds the identical structure.
 
@@ -168,10 +192,12 @@ The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma)
 | Resource created | `201` | The created row |
 | Resource deleted | `204` | Empty |
 | Invalid input (bad id, missing field, duplicate, blocked delete) | `400` | `{ "error": "…" }` |
+| Missing or invalid session | `401` | `{ "error": "Authentication required" }` |
+| A hold owned by another user | `403` | `{ "error": "Not allowed to change this hold" }` |
 | Unknown id or route | `404` | `{ "error": "…" }` |
 | Unexpected failure (logged server-side) | `500` | `{ "error": "…" }`, never a stack trace |
 
-No other status codes are used.
+`401` and `403` are used only by `/auth` and `/holds` (approved exception). `409`, `422` and `429` are still not used.
 
 ### Endpoints
 
@@ -194,10 +220,18 @@ No other status codes are used.
 | `POST` | `/stock` | Create `{ pharmacyId, medicineId, quantity, pricePaise }` · *development only* | 201, 400, 404 |
 | `PUT` | `/stock/:id` | Replace `quantity` and `pricePaise` · *development only* | 200, 400, 404 |
 | `DELETE` | `/stock/:id` | Delete stock row · *development only* | 204, 400, 404 |
+| `POST` | `/auth/register` | Create `{ name, phone, password }` and start a session | 201, 400 |
+| `POST` | `/auth/login` | Log in with `{ phone, password }` | 200, 401 |
+| `POST` | `/auth/logout` | Destroy the current session | 204 |
+| `GET` | `/auth/me` | Current account | 200, 401 |
+| `GET` | `/holds` | Current user’s holds, newest first | 200, 401 |
+| `POST` | `/holds` | Reserve `{ stockItemId, quantity }` for 30 minutes | 201, 400, 401, 404 |
+| `DELETE` | `/holds/:id` | Cancel the caller’s active hold and restore stock | 204, 400, 401, 403, 404 |
 
-> **Development-only writes.** The write routes are not registered when
-> `NODE_ENV=production`. This is a deployment guard, not authentication:
-> the API has no accounts and must never be exposed publicly.
+> **Development-only writes.** The medicine, pharmacy and stock write routes are
+> not registered when `NODE_ENV=production`. Accounts and holds are separate:
+> they are always mounted, but the session store is Express’s in-memory store,
+> so the current build is still local-only and must not be exposed publicly.
 
 ### Examples
 
@@ -294,17 +328,18 @@ npm install
 There is no `dotenv`. The API reads `process.env` once at start-up, through `src/config/env.js`, and **fails fast** if a required key is missing. Prisma's CLI reads `server/.env`; the running server reads the shell.
 
 ```bash
-cp .env.example .env            # then put your own credentials in DATABASE_URL
+cp .env.example .env            # then set DATABASE_URL and SESSION_SECRET
 set -a; source .env; set +a     # export the same values into this shell
 ```
 
 | Variable | Required | Default | Used by |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | yes | none | API config, Prisma |
+| `SESSION_SECRET` | yes | none | Session cookie signing |
 | `PORT` | no | `3000` | API |
-| `NODE_ENV` | no | `development` | API; `production` disables write routes |
+| `NODE_ENV` | no | `development` | API; `production` disables the catalogue write routes |
 
-A missing key stops boot with one line: `Missing environment variables: DATABASE_URL`.
+A missing key stops boot with one line: `Missing environment variables: DATABASE_URL, SESSION_SECRET`.
 
 ### 3 · Create the schema and seed it
 
@@ -326,6 +361,20 @@ Open **http://localhost:3000** and search for `dolo`, or call the API directly:
 curl http://localhost:3000/health
 curl "http://localhost:3000/pharmacies?medicine=dolo&area=sector%2014"
 ```
+
+Create an account and reserve one strip:
+
+```bash
+curl -c jar -X POST http://localhost:3000/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Asha","phone":"9000000001","password":"password123"}'
+
+curl -b jar -X POST http://localhost:3000/holds \
+  -H 'Content-Type: application/json' \
+  -d '{"stockItemId":1,"quantity":1}'
+```
+
+Open **http://localhost:3000/account.html** to see the hold, or **/pharmacy.html?id=1** to reserve from the stock table.
 
 ---
 
@@ -371,12 +420,12 @@ The fixtures model a realistic case in Sonipat, Haryana: four verified pharmacie
 │   │   ├── migrations/        Versioned SQL, committed
 │   │   ├── data/              Seed fixtures (JSON)
 │   │   └── dev-seed.js        Idempotent development seed
-│   ├── public/                Static client: index.html · pharmacy.html · app.js · pharmacy.js · styles.css
+│   ├── public/                Static client: index.html · pharmacy.html · account.html · app.js · pharmacy.js · account.js · styles.css
 │   └── src/
 │       ├── config/env.js      Read the environment once, fail fast
 │       ├── db/prisma.js       One shared PrismaClient (one connection pool)
-│       ├── middlewares/       Request logger
-│       ├── routes/            One router per resource (/health, /medicines, /pharmacies, /stock)
+│       ├── middlewares/       Request logger and session guard
+│       ├── routes/            One router per resource (/health, /medicines, /pharmacies, /stock, /auth, /holds)
 │       ├── controllers/       Validation, Prisma calls, status codes
 │       ├── utils/             AppError, asyncHandler
 │       ├── app.js             Middleware order and mounting
@@ -397,8 +446,12 @@ The fixtures model a realistic case in Sonipat, Haryana: four verified pharmacie
 | **Integer paise for money** | Avoids floating-point rounding on prices; formatting happens only at the edge (the client). |
 | **Server-owned `status`** | Verification can never come from the request body; new pharmacies are always `PENDING`. |
 | **Search returns only matching stock** | The client renders exactly what is relevant, and out-of-stock or unverified results cannot leak into a search. |
-| **Writes gated by `NODE_ENV`** | Without authentication, write routes must not exist in a public deployment. |
-| **Uniform response contract** | Bare resource on success, `{ error }` on failure, six status codes only, which keeps the client's error handling trivial. |
+| **Catalogue writes gated by `NODE_ENV`** | `POST`/`PUT`/`DELETE` on medicines, pharmacies and stock stay development-only; the public surface is reads, accounts and holds. |
+| **Sessions over JWT** | An HttpOnly, SameSite=Lax cookie is simpler than token storage for a same-origin static client. Express’s MemoryStore is development-only. |
+| **Holds are transactional** | `updateMany` with `quantity >= requested` plus `$transaction` prevents two users from reserving the last strip. |
+| **Bcrypt hash only** | The password is hashed before insert; every response uses `select` so the hash never leaves the server. |
+| **Lazy expiry** | Due holds are expired on the next `/holds` request and the stock is restored once, guarded by the status update. |
+| **Uniform response contract** | Bare resource on success, `{ error }` on failure; 401/403 appear only on auth/hold routes, which keeps the client's error handling trivial. |
 | **Fail-fast configuration** | A misconfigured environment stops at boot with one clear message instead of failing on the first query. |
 
 ---
@@ -409,7 +462,7 @@ Every endpoint is exercised with `curl` against a seeded database, and the resul
 
 - `node --check` passes on every new file, and `npm run dev` boots;
 - every acceptance check in the commit's playbook passes and is recorded;
-- responses follow the contract above (status codes 200, 201, 204, 400, 404 and 500 only);
+- responses follow the contract above (200, 201, 204, 400, 401, 403, 404 and 500; 401/403 only on auth/hold routes);
 - no secrets are committed, and `.env.example` is kept current;
 - the commit is read by a ring partner before it lands.
 
@@ -418,7 +471,9 @@ Every endpoint is exercised with `curl` against a seeded database, and the resul
 | t1 · Medicines read | Manav | list, filter, 400 / 404, create / replace / delete | 10 / 10 pass |
 | t2 · Pharmacies read | Manav | verified-only list and detail, area, medicine search, server-owned status, array query | 13 / 13 pass |
 | t3 · Stock write | Sayem | list by pharmacy, add, update, delete, 400 / 404 | 11 / 11 pass |
-| t4 · Envelope and codes | Sayem (Yash presents) | status codes (200, 201, 204, 400, 404, 500), error envelope, terminal 404 | 8 / 8 pass |
+| t4 · Envelope and codes | Sayem (Yash presents) | status codes, error envelope, terminal 404, bracket query | 8 / 8 pass |
+| t7 · Accounts | Vishal | register, duplicate, login, bad password, me, logout, password hash | 9 / 9 pass |
+| t8 · Holds | Vishal | reserve, list, cross-user 403, cancel, insufficient stock, PENDING stock, expiry restore | 10 / 10 pass |
 
 ---
 
@@ -438,7 +493,9 @@ The API cannot naturally show every lecture, so small, independent programs do. 
 
 ## Scope and non-goals
 
-The lectures stop at Express, routers, PostgreSQL and Prisma, so the following are **intentionally out of scope** and documented as such in the report: accounts and authentication, roles and an admin verification workflow, reservations or holds, MongoDB, a React client, geolocation and distance sorting, and cloud deployment.
+One exception is approved and recorded in `AGENTS.md`: patient accounts and 30-minute stock holds (bcrypt, express-session, 401/403, Prisma `updateMany` + `$transaction`). Everything else stays within L1–L12. Still out of scope: pharmacist/admin roles, email verification or password reset, email/SMS, payments, MongoDB, a React client, geolocation and distance sorting, and cloud deployment.
+
+The account/hold build is local-only: Express’s MemoryStore sessions are lost on restart, there is no CSRF token or rate limiting (SameSite=Lax is the only guard), holds expire lazily on the next `/holds` request, and there is no HTTPS locally.
 
 ---
 
@@ -446,7 +503,7 @@ The lectures stop at Express, routers, PostgreSQL and Prisma, so the following a
 
 | Member | Ownership |
 | --- | --- |
-| **Vishal** | Toolchain, Express skeleton, configuration, static client, README *(repository owner)* |
+| **Vishal** | Toolchain, Express skeleton, configuration, static client, README, accounts and holds *(repository owner)* |
 | **Manav** | Prisma schema and migration, development seed, Medicines and Pharmacies APIs |
 | **Yash** | Error utilities and the course demos (http, fs, event loop, Express routing) |
 | **Sayem** | Stock API, `pg` driver demo, client wiring, contract sweep, viva script and report |

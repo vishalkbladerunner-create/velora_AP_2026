@@ -12,6 +12,7 @@
     <div class="wrap header-inner">
       <a class="brand" href="/">Velora</a>
       <p class="tagline">Find a verified pharmacy that has your medicine in stock.</p>
+      <nav class="header-nav"><a href="/">Search</a><a href="/account.html">Account</a></nav>
     </div>
   </header>
 
@@ -54,18 +55,20 @@
                   <th scope="col">Form</th>
                   <th scope="col">Quantity</th>
                   <th scope="col">Price</th>
+                  <th scope="col">Reserve</th>
                 </tr>
               </thead>
               <tbody id="stock-rows"></tbody>
             </table>
           </div>
+          <p id="reserve-message" class="state" role="status" hidden></p>
         </section>
       </article>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap">Velora · development build · search only, no accounts or reservations yet.</div>
+    <div class="wrap">Velora · development build · search, accounts and 30-minute holds.</div>
   </footer>
 
   <script src="/pharmacy.js"></script>

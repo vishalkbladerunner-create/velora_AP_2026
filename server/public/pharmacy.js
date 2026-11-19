@@ -12,6 +12,16 @@ const licenceEl = document.getElementById('pharmacy-licence');
 const stockEmptyEl = document.getElementById('stock-empty');
 const stockTable = document.getElementById('stock-table');
 const stockRows = document.getElementById('stock-rows');
+const reserveMessage = document.getElementById('reserve-message');
+
+let currentUser = null;
+
+fetch('/auth/me')
+  .then((response) => (response.ok ? response.json() : null))
+  .then((user) => {
+    currentUser = user;
+  })
+  .catch(() => {});
 
 function showError(text) {
   message.textContent = text;
@@ -22,6 +32,53 @@ function showError(text) {
 
 function formatPrice(paise) {
   return '₹' + (paise / 100).toFixed(2);
+}
+
+function showReserve(text, kind) {
+  reserveMessage.textContent = text;
+  reserveMessage.className = 'state state-' + kind;
+  reserveMessage.hidden = false;
+}
+
+async function reserve(stockItemId, quantityValue) {
+  if (!currentUser) {
+    window.location.href = '/account.html';
+    return;
+  }
+
+  const quantity = Number(quantityValue);
+
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    showReserve('Choose a positive quantity.', 'error');
+    return;
+  }
+
+  const response = await fetch('/holds', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stockItemId: stockItemId, quantity: quantity }),
+  });
+
+  if (response.status === 401) {
+    window.location.href = '/account.html';
+    return;
+  }
+
+  let body = {};
+
+  try {
+    body = await response.json();
+  } catch (error) {
+    body = {};
+  }
+
+  if (!response.ok) {
+    showReserve(body.error || 'Could not reserve the stock.', 'error');
+    return;
+  }
+
+  showReserve('Reserved ' + quantity + '. Pick it up within 30 minutes.', 'success');
+  await load();
 }
 
 function render(pharmacy) {
@@ -59,6 +116,32 @@ function render(pharmacy) {
       const tdPrice = document.createElement('td');
       tdPrice.textContent = formatPrice(row.pricePaise);
       tr.appendChild(tdPrice);
+
+      const tdReserve = document.createElement('td');
+      tdReserve.className = 'reserve-cell';
+
+      if (row.quantity > 0) {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '1';
+        input.max = String(row.quantity);
+        input.value = '1';
+        input.className = 'reserve-qty';
+        input.setAttribute('aria-label', 'Quantity to reserve of ' + (row.medicine ? row.medicine.name : 'medicine'));
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'reserve-btn';
+        button.textContent = 'Reserve';
+        button.addEventListener('click', () => reserve(row.id, input.value));
+
+        tdReserve.appendChild(input);
+        tdReserve.appendChild(button);
+      } else {
+        tdReserve.textContent = '—';
+      }
+
+      tr.appendChild(tdReserve);
 
       stockRows.appendChild(tr);
     });

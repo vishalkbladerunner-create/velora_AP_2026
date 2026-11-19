@@ -6,8 +6,8 @@ const stockRouter = express.Router();
 
 stockRouter.get('/', stockController.getAll);
 
-// Deployment guard, not authentication: these routes do not exist in
-// production. The API has no accounts; never expose it publicly.
+// Deployment guard: catalogue writes are not registered in production.
+// Accounts and holds are separate; never expose these writes publicly.
 if (config.nodeEnv !== 'production') {
   stockRouter.post('/', stockController.createStock);
   stockRouter.put('/:id', stockController.updateStock);
