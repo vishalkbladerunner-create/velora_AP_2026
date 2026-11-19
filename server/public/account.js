@@ -8,6 +8,12 @@ const holdsEmptyEl = document.getElementById('holds-empty');
 const registerForm = document.getElementById('register-form');
 const loginForm = document.getElementById('login-form');
 const logoutButton = document.getElementById('logout-button');
+const pharmacyDetailsEl = document.getElementById('pharmacy-details');
+const pharmacyNameLineEl = document.getElementById('pharmacy-name-line');
+const pharmacyMetaLineEl = document.getElementById('pharmacy-meta-line');
+const registerPharmacyForm = document.getElementById('register-pharmacy-form');
+
+let pendingPharmacy = null;
 
 function showMessage(text, kind) {
   messageEl.textContent = text;
@@ -32,6 +38,8 @@ function showLoggedOut() {
   loggedInEl.hidden = true;
   holdsListEl.replaceChildren();
   holdsEmptyEl.hidden = true;
+  pharmacyDetailsEl.hidden = true;
+  registerPharmacyForm.hidden = true;
 }
 
 function showLoggedIn(user) {
@@ -153,6 +161,86 @@ async function loadHolds() {
   renderHolds(body);
 }
 
+function readPharmacy(prefix) {
+  return {
+    name: document.getElementById(prefix + 'pharmacy-name').value.trim(),
+    area: document.getElementById(prefix + 'pharmacy-area').value.trim(),
+    address: document.getElementById(prefix + 'pharmacy-address').value.trim(),
+    phone: document.getElementById(prefix + 'pharmacy-phone').value.trim(),
+    licenceNumber: document.getElementById(prefix + 'pharmacy-licence').value.trim(),
+  };
+}
+
+function fillPharmacy(prefix, pharmacy) {
+  document.getElementById(prefix + 'pharmacy-name').value = pharmacy.name;
+  document.getElementById(prefix + 'pharmacy-area').value = pharmacy.area;
+  document.getElementById(prefix + 'pharmacy-address').value = pharmacy.address;
+  document.getElementById(prefix + 'pharmacy-phone').value = pharmacy.phone;
+  document.getElementById(prefix + 'pharmacy-licence').value = pharmacy.licenceNumber;
+}
+
+function isBlankPharmacy(pharmacy) {
+  return !pharmacy.name && !pharmacy.area && !pharmacy.address &&
+    !pharmacy.phone && !pharmacy.licenceNumber;
+}
+
+function isCompletePharmacy(pharmacy) {
+  return pharmacy.name && pharmacy.area && pharmacy.address &&
+    pharmacy.phone && pharmacy.licenceNumber;
+}
+
+async function registerPharmacy(pharmacy) {
+  const response = await fetch('/pharmacies/mine', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(pharmacy),
+  });
+
+  const body = await readJson(response);
+  return { ok: response.ok, body: body };
+}
+
+function showPharmacy(pharmacy) {
+  pharmacyDetailsEl.hidden = false;
+  registerPharmacyForm.hidden = true;
+  pharmacyNameLineEl.textContent = pharmacy.name;
+  pharmacyMetaLineEl.textContent =
+    pharmacy.area + ' · ' + pharmacy.status + ' · licence ' + pharmacy.licenceNumber;
+}
+
+function showPharmacyForm() {
+  pharmacyDetailsEl.hidden = true;
+  registerPharmacyForm.hidden = false;
+
+  if (pendingPharmacy) {
+    fillPharmacy('account-', pendingPharmacy);
+    pendingPharmacy = null;
+  }
+}
+
+async function loadPharmacy() {
+  const response = await fetch('/pharmacies/mine');
+
+  if (response.status === 401) {
+    showLoggedOut();
+    return;
+  }
+
+  if (response.status === 404) {
+    showPharmacyForm();
+    return;
+  }
+
+  const body = await readJson(response);
+
+  if (!response.ok) {
+    showMessage(body.error || 'Could not load your pharmacy.', 'error');
+    return;
+  }
+
+  showPharmacy(body);
+}
+
 async function loadMe() {
   const response = await fetch('/auth/me');
 
@@ -169,6 +257,7 @@ async function loadMe() {
   }
 
   showLoggedIn(body);
+  await loadPharmacy();
   await loadHolds();
 }
 
@@ -178,6 +267,13 @@ registerForm.addEventListener('submit', async (event) => {
   const name = document.getElementById('register-name').value.trim();
   const phone = document.getElementById('register-phone').value.trim();
   const password = document.getElementById('register-password').value;
+  const pharmacy = readPharmacy('signup-');
+  const hasPharmacy = !isBlankPharmacy(pharmacy);
+
+  if (hasPharmacy && !isCompletePharmacy(pharmacy)) {
+    showMessage('Complete every pharmacy field, or leave them all blank.', 'error');
+    return;
+  }
 
   const response = await fetch('/auth/register', {
     method: 'POST',
@@ -193,7 +289,23 @@ registerForm.addEventListener('submit', async (event) => {
   }
 
   registerForm.reset();
-  hideMessage();
+
+  if (hasPharmacy) {
+    const result = await registerPharmacy(pharmacy);
+
+    if (!result.ok) {
+      pendingPharmacy = pharmacy;
+      showMessage(
+        'Account created, but the pharmacy was not registered: ' +
+        (result.body.error || 'unknown error') + ' You can try again below.',
+        'error'
+      );
+      await loadMe();
+      return;
+    }
+  }
+
+  showMessage(hasPharmacy ? 'Account and pharmacy created.' : 'Account created.', 'success');
   await loadMe();
 });
 
@@ -230,8 +342,31 @@ logoutButton.addEventListener('click', async () => {
     return;
   }
 
+  pendingPharmacy = null;
   hideMessage();
   showLoggedOut();
+});
+
+registerPharmacyForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const pharmacy = readPharmacy('account-');
+
+  if (!isCompletePharmacy(pharmacy)) {
+    showMessage('Complete every pharmacy field.', 'error');
+    return;
+  }
+
+  const result = await registerPharmacy(pharmacy);
+
+  if (!result.ok) {
+    showMessage(result.body.error || 'Could not register the pharmacy.', 'error');
+    return;
+  }
+
+  registerPharmacyForm.reset();
+  showMessage('Pharmacy registered.', 'success');
+  await loadPharmacy();
 });
 
 loadMe();

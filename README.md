@@ -37,7 +37,8 @@ Velora is the CSA213 Advanced Programming capstone at Rishihood University. It i
 | Search client linked to pharmacy detail page with stock table | Done (P3) |
 | Patient accounts: register, login, logout, session cookie | Done (approved exception) |
 | 30-minute stock holds: reserve, list, cancel, expiry restore | Done (approved exception) |
-| Development catalogue page: add medicines, verified pharmacies and stock | Done (development tool) |
+| Pharmacy registration at account creation; one pharmacy per account | Done (development tool) |
+| Development catalogue page: add medicines and manage your own pharmacy's stock | Done (development tool) |
 | Contract sweep over every route, viva script and report | Done (P3) |
 
 ---
@@ -52,7 +53,7 @@ flowchart LR
     subgraph proc["Node.js process (server/src)"]
         direction LR
         mw["Middleware chain<br/>express.json → logger → session → express.static"]
-        routers["Routers<br/>/health · /medicines · /pharmacies · /stock · /auth · /holds · /catalogue"]
+        routers["Routers<br/>/health · /medicines · /pharmacies · /stock · /auth · /holds"]
         ctrl["Controllers<br/>validation · auth guard · status codes · shaping"]
         prisma["Prisma Client<br/>one shared instance"]
         nf["Terminal 404<br/>{ error }"]
@@ -121,6 +122,7 @@ erDiagram
     MEDICINE ||--o{ STOCKITEM : "stocked as"
     USER ||--o{ HOLD : places
     STOCKITEM ||--o{ HOLD : "reserved by"
+    USER ||--o| PHARMACY : owns
 
     MEDICINE {
         int id PK
@@ -135,6 +137,7 @@ erDiagram
         string phone
         string licenceNumber UK
         string status "PENDING (default) or VERIFIED"
+        int ownerId FK "unique, nullable"
     }
     STOCKITEM {
         int id PK
@@ -170,9 +173,11 @@ erDiagram
 | One stock row per pharmacy–medicine pair | `@@unique([pharmacyId, medicineId])` → index `StockItem_pharmacyId_medicineId_key` |
 | A stock row must reference a real pharmacy and medicine | Foreign keys with `ON DELETE RESTRICT ON UPDATE CASCADE` |
 | A medicine that is still stocked cannot be deleted | Checked first in JavaScript (`400`) before the foreign key would raise |
-| New pharmacies start unverified | Column default `'PENDING'`; the API ignores any `status` in the request body |
+| New pharmacies start unverified | The public create route sets `PENDING`. Account registration sets `PENDING` in production and `VERIFIED` in this development build. |
 | Money never uses floating point | Prices are stored as integer **paise**; the client formats `₹` |
 | One account per mobile number | `User.phone` is `@unique`; the password is stored only as a bcrypt hash |
+| One pharmacy per account | `Pharmacy.ownerId` is `@unique` and nullable; seeded pharmacies have no owner |
+| Only the owner changes stock | `POST`/`PUT`/`DELETE /stock` compare the session user with `Pharmacy.ownerId` and return `403` for anyone else |
 | A hold belongs to one user and one stock row | Foreign keys on `Hold`; the owner is checked before a cancel |
 | A hold never overdraws stock | `$transaction` + `updateMany` checks `quantity >= requested` before the decrement |
 | Expired stock returns to the shelf | The next hold request marks due holds `EXPIRED` and increments the stock row once |
@@ -218,10 +223,11 @@ The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma)
 | `GET` | `/pharmacies/:id` | One verified pharmacy with all its stock and each medicine | 200, 400, 404 |
 | `POST` | `/pharmacies` | Create; the server sets `status` · *development only* | 201, 400 |
 | `GET` | `/stock?pharmacyId=` | Stock items for one verified pharmacy with medicine | 200, 400 |
-| `POST` | `/stock` | Create `{ pharmacyId, medicineId, quantity, pricePaise }` · *development only* | 201, 400, 404 |
-| `PUT` | `/stock/:id` | Replace `quantity` and `pricePaise` · *development only* | 200, 400, 404 |
-| `DELETE` | `/stock/:id` | Delete stock row · *development only* | 204, 400, 404 |
-| `POST` | `/catalogue/pharmacies` | Development catalogue fixture: create a **VERIFIED** pharmacy | 201, 400 |
+| `POST` | `/stock` | Create stock for **your own** pharmacy · *development only* | 201, 400, 401, 403, 404 |
+| `PUT` | `/stock/:id` | Replace quantity and price on your own stock · *development only* | 200, 400, 401, 403, 404 |
+| `DELETE` | `/stock/:id` | Delete your own stock row · *development only* | 204, 400, 401, 403, 404 |
+| `GET` | `/pharmacies/mine` | The pharmacy registered to the signed-in account | 200, 401, 404 |
+| `POST` | `/pharmacies/mine` | Register one pharmacy for the signed-in account | 201, 400, 401 |
 | `POST` | `/auth/register` | Create `{ name, phone, password }` and start a session | 201, 400 |
 | `POST` | `/auth/login` | Log in with `{ phone, password }` | 200, 401 |
 | `POST` | `/auth/logout` | Destroy the current session | 204 |
@@ -231,12 +237,11 @@ The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma)
 | `DELETE` | `/holds/:id` | Cancel the caller’s active hold and restore stock | 204, 400, 401, 403, 404 |
 
 > **Development-only writes.** The medicine, pharmacy and stock write routes are
-> not registered when `NODE_ENV=production`. Accounts and holds are separate:
-> they are always mounted, but the session store is Express’s in-memory store,
-> so the current build is still local-only and must not be exposed publicly.
-> `POST /catalogue/pharmacies` is a development fixture that creates a VERIFIED
-> pharmacy so the catalogue page can stock it; the public `POST /pharmacies`
-> still starts every new pharmacy as PENDING.
+> not registered when `NODE_ENV=production`. Accounts, holds and
+> `POST /pharmacies/mine` are separate: they are always mounted, but the session
+> store is Express’s in-memory store, so the current build is still local-only
+> and must not be exposed publicly. Stock writes additionally require the
+> signed-in owner of that pharmacy; another user gets `403`.
 
 ### Examples
 
@@ -383,12 +388,13 @@ Open **http://localhost:3000/account.html** to see the hold, or **/pharmacy.html
 
 ## Catalogue page (development only)
 
-Open **http://localhost:3000/catalogue.html** to add medicines, verified pharmacies and stock from the browser. The page calls the same development-only routes as the API.
+Open **http://localhost:3000/catalogue.html** to add medicines and manage the stock of the pharmacy registered to your account.
 
-- Adding a medicine makes it available to the stock form immediately.
-- Adding a pharmacy through the page uses `POST /catalogue/pharmacies`, a development fixture that creates the row as **VERIFIED** so it can be stocked and searched. The public `POST /pharmacies` still starts every pharmacy as **PENDING**.
-- Adding stock takes rupees in the form and converts them to integer paise before the request.
-- None of these write routes exist when `NODE_ENV=production`.
+- Register a pharmacy in the optional section of the account form, or later from `/account.html`. One account owns at most one pharmacy (`GET`/`POST /pharmacies/mine`).
+- The catalogue shows only **your** pharmacy. `POST /stock` checks the signed-in owner; adding stock to another pharmacy returns `403`.
+- Adding a medicine updates the shared medicine list and the stock dropdown immediately.
+- Stock is entered in rupees and converted to integer paise before the request.
+- These write routes do not exist when `NODE_ENV=production`. The development build auto-verifies a newly registered pharmacy so it can be stocked and searched; production would need a real verification workflow.
 
 ---
 
@@ -439,7 +445,7 @@ The fixtures model a realistic case in Sonipat, Haryana: four verified pharmacie
 │       ├── config/env.js      Read the environment once, fail fast
 │       ├── db/prisma.js       One shared PrismaClient (one connection pool)
 │       ├── middlewares/       Request logger and session guard
-│       ├── routes/            One router per resource (/health, /medicines, /pharmacies, /stock, /auth, /holds, /catalogue)
+│       ├── routes/            One router per resource (/health, /medicines, /pharmacies, /stock, /auth, /holds)
 │       ├── controllers/       Validation, Prisma calls, status codes
 │       ├── utils/             AppError, asyncHandler
 │       ├── app.js             Middleware order and mounting
@@ -460,7 +466,7 @@ The fixtures model a realistic case in Sonipat, Haryana: four verified pharmacie
 | **Integer paise for money** | Avoids floating-point rounding on prices; formatting happens only at the edge (the client). |
 | **Server-owned `status`** | Verification can never come from the request body; new pharmacies are always `PENDING`. |
 | **Search returns only matching stock** | The client renders exactly what is relevant, and out-of-stock or unverified results cannot leak into a search. |
-| **Catalogue writes gated by `NODE_ENV`** | `POST`/`PUT`/`DELETE` on medicines, pharmacies and stock stay development-only; the public surface is reads, accounts and holds. |
+| **Catalogue writes gated by `NODE_ENV`** | `POST`/`PUT`/`DELETE` on medicines, pharmacies and stock stay development-only; stock writes are also restricted to the pharmacy’s signed-in owner. |
 | **Sessions over JWT** | An HttpOnly, SameSite=Lax cookie is simpler than token storage for a same-origin static client. Express’s MemoryStore is development-only. |
 | **Holds are transactional** | `updateMany` with `quantity >= requested` plus `$transaction` prevents two users from reserving the last strip. |
 | **Bcrypt hash only** | The password is hashed before insert; every response uses `select` so the hash never leaves the server. |
@@ -484,11 +490,12 @@ Every endpoint is exercised with `curl` against a seeded database, and the resul
 | --- | --- | --- | --- |
 | t1 · Medicines read | Manav | list, filter, 400 / 404, create / replace / delete | 10 / 10 pass |
 | t2 · Pharmacies read | Manav | verified-only list and detail, area, medicine search, server-owned status, array query | 13 / 13 pass |
-| t3 · Stock write | Sayem | list by pharmacy, add, update, delete, 400 / 404 | 11 / 11 pass |
+| t3 · Stock read | Sayem | list by pharmacy, 400 validation, PENDING exclusion | 3 / 3 pass |
 | t4 · Envelope and codes | Sayem (Yash presents) | status codes, error envelope, terminal 404, bracket query | 8 / 8 pass |
 | t7 · Accounts | Vishal | register, duplicate, login, bad password, me, logout, password hash | 9 / 9 pass |
 | t8 · Holds | Vishal | reserve, list, cross-user 403, cancel, insufficient stock, PENDING stock, expiry restore | 10 / 10 pass |
-| t9 · Catalogue page | Vishal | add medicine, verified pharmacy, stock, search hit | 4 / 4 pass |
+| t9 · Pharmacy ownership | Vishal | register mine, duplicate 400, own stock 201, other pharmacy 403, other user 403, anon 401 | 12 / 12 pass |
+| t10 · Catalogue page | Vishal | signup with pharmacy, own stock, search hit | 4 / 4 pass |
 
 ---
 
@@ -510,7 +517,7 @@ The API cannot naturally show every lecture, so small, independent programs do. 
 
 One exception is approved and recorded in `AGENTS.md`: patient accounts and 30-minute stock holds (bcrypt, express-session, 401/403, Prisma `updateMany` + `$transaction`). Everything else stays within L1–L12. Still out of scope: pharmacist/admin roles, email verification or password reset, email/SMS, payments, MongoDB, a React client, geolocation and distance sorting, and cloud deployment.
 
-The catalogue page is a development tool, not a staff role or a verification workflow. Its `POST /catalogue/pharmacies` fixture creates a VERIFIED row so the page can be demonstrated end to end; the public create route still starts PENDING, and the fixture is not mounted in production.
+The catalogue page is a development tool, not a staff role. Stock writes are owner-only: an account can register one pharmacy and change only that pharmacy’s stock. The development build auto-verifies a newly registered pharmacy; production would need a real licence-verification workflow.
 
 The account/hold build is local-only: Express’s MemoryStore sessions are lost on restart, there is no CSRF token or rate limiting (SameSite=Lax is the only guard), holds expire lazily on the next `/holds` request, and there is no HTTPS locally.
 

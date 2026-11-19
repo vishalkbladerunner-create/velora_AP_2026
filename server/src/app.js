@@ -10,7 +10,6 @@ const pharmaciesRouter = require('./routes/pharmacies.router');
 const stockRouter = require('./routes/stock.router');
 const authRouter = require('./routes/auth.router');
 const holdsRouter = require('./routes/holds.router');
-const catalogueRouter = require('./routes/catalogue.router');
 
 const app = express();
 
@@ -36,7 +35,6 @@ app.use('/pharmacies', pharmaciesRouter);
 app.use('/stock', stockRouter);
 app.use('/auth', authRouter);
 app.use('/holds', holdsRouter);
-app.use('/catalogue', catalogueRouter);
 
 // Terminal 404: it sends the response and never calls next().
 app.use((req, res) => {

@@ -22,7 +22,7 @@
     </div>
 
     <h1 class="page-title">Your account</h1>
-    <p class="page-lede">Log in to reserve stock for 30 minutes at a verified pharmacy.</p>
+    <p class="page-lede">Log in to reserve stock for 30 minutes, or register a pharmacy and manage its stock.</p>
 
     <p id="account-message" class="state" role="status" hidden></p>
 
@@ -39,6 +39,24 @@
 
         <label class="field-label" for="register-password">Password</label>
         <input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+
+        <h3 class="form-subtitle">Your pharmacy (optional)</h3>
+        <p class="hint">Fill this in to add stock to your own pharmacy. Leave it blank to only reserve medicine.</p>
+
+        <label class="field-label" for="signup-pharmacy-name">Pharmacy name</label>
+        <input id="signup-pharmacy-name" name="pharmacyName" type="text">
+
+        <label class="field-label" for="signup-pharmacy-area">Area</label>
+        <input id="signup-pharmacy-area" name="pharmacyArea" type="text">
+
+        <label class="field-label" for="signup-pharmacy-address">Address</label>
+        <input id="signup-pharmacy-address" name="pharmacyAddress" type="text">
+
+        <label class="field-label" for="signup-pharmacy-phone">Pharmacy phone</label>
+        <input id="signup-pharmacy-phone" name="pharmacyPhone" type="tel" inputmode="numeric">
+
+        <label class="field-label" for="signup-pharmacy-licence">Licence number</label>
+        <input id="signup-pharmacy-licence" name="pharmacyLicence" type="text">
 
         <button type="submit" class="primary-button">Create account</button>
       </form>
@@ -66,6 +84,37 @@
         <button type="button" id="logout-button" class="secondary-button">Log out</button>
       </div>
 
+      <section class="pharmacy-section" aria-labelledby="pharmacy-heading">
+        <h2 id="pharmacy-heading" class="section-title">Your pharmacy</h2>
+
+        <div id="pharmacy-details" hidden>
+          <p class="pharmacy-line" id="pharmacy-name-line"></p>
+          <p class="hint" id="pharmacy-meta-line"></p>
+          <p class="hint"><a href="/catalogue.html">Manage stock in the catalogue</a></p>
+        </div>
+
+        <form id="register-pharmacy-form" class="form-card" novalidate hidden>
+          <p class="hint">Register one pharmacy to add stock to it. A new pharmacy is verified in this development build.</p>
+
+          <label class="field-label" for="account-pharmacy-name">Pharmacy name</label>
+          <input id="account-pharmacy-name" name="name" type="text" required>
+
+          <label class="field-label" for="account-pharmacy-area">Area</label>
+          <input id="account-pharmacy-area" name="area" type="text" required>
+
+          <label class="field-label" for="account-pharmacy-address">Address</label>
+          <input id="account-pharmacy-address" name="address" type="text" required>
+
+          <label class="field-label" for="account-pharmacy-phone">Pharmacy phone</label>
+          <input id="account-pharmacy-phone" name="phone" type="tel" inputmode="numeric" required>
+
+          <label class="field-label" for="account-pharmacy-licence">Licence number</label>
+          <input id="account-pharmacy-licence" name="licenceNumber" type="text" required>
+
+          <button type="submit" class="primary-button">Register pharmacy</button>
+        </form>
+      </section>
+
       <section class="holds-section" aria-labelledby="holds-heading">
         <h2 id="holds-heading" class="section-title">Your holds</h2>
         <p id="holds-empty" class="state state-empty" hidden>No holds yet. Reserve from a pharmacy page.</p>
@@ -75,7 +124,7 @@
   </main>
 
   <footer class="site-footer">
-    <div class="wrap">Velora · development build · search, accounts and 30-minute holds.</div>
+    <div class="wrap">Velora · development build · search, accounts, holds and pharmacy stock.</div>
   </footer>
 
   <script src="/account.js"></script>

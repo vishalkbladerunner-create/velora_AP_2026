@@ -1,3 +1,4 @@
+const config = require('../config/env');
 const prisma = require('../db/prisma');
 
 // Read the :id route parameter; returns null when it is not a whole number.
@@ -9,6 +10,13 @@ function readId(req) {
   }
 
   return id;
+}
+
+// Keep the internal owner id out of the public pharmacy responses.
+function withoutOwner(pharmacy) {
+  const copy = { ...pharmacy };
+  delete copy.ownerId;
+  return copy;
 }
 
 // GET /pharmacies?medicine=dolo&area=Sector 14
@@ -45,7 +53,7 @@ async function searchByMedicine(medicine, area) {
 
   stockRows.forEach((row) => {
     if (!byPharmacy.has(row.pharmacyId)) {
-      byPharmacy.set(row.pharmacyId, { ...row.pharmacy, stock: [] });
+      byPharmacy.set(row.pharmacyId, { ...withoutOwner(row.pharmacy), stock: [] });
     }
 
     const stockRow = { ...row };
@@ -99,7 +107,7 @@ const getAll = async (req, res) => {
       orderBy: { name: 'asc' },
     });
 
-    res.json(pharmacies);
+    res.json(pharmacies.map(withoutOwner));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Could not load pharmacies' });
@@ -126,15 +134,16 @@ const getById = async (req, res) => {
       return;
     }
 
-    res.json(pharmacy);
+    res.json(withoutOwner(pharmacy));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Could not load the pharmacy' });
   }
 };
 
-// Shared create path. The route decides the status; the request body never does.
-async function createPharmacyWithStatus(req, res, status) {
+// Shared create path. The route decides the status and owner; the request body
+// never does.
+async function createPharmacyWithStatus(req, res, status, ownerId) {
   try {
     // req.body is undefined when no JSON body was sent.
     const body = req.body || {};
@@ -164,6 +173,7 @@ async function createPharmacyWithStatus(req, res, status) {
         phone: body.phone,
         licenceNumber: body.licenceNumber,
         status: status,
+        ownerId: ownerId,
       },
     });
 
@@ -174,23 +184,57 @@ async function createPharmacyWithStatus(req, res, status) {
   }
 }
 
-// POST /pharmacies  body: { name, area, address, phone, licenceNumber }  (development only)
-// The public create route starts every pharmacy as PENDING.
-const createPharmacy = (req, res) => {
-  return createPharmacyWithStatus(req, res, 'PENDING');
+// GET /pharmacies/mine  (session required)
+const getMine = async (req, res) => {
+  try {
+    const pharmacy = await prisma.pharmacy.findUnique({
+      where: { ownerId: req.session.userId },
+    });
+
+    if (!pharmacy) {
+      res.status(404).json({ error: 'No pharmacy registered' });
+      return;
+    }
+
+    res.json(pharmacy);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Could not load your pharmacy' });
+  }
 };
 
-// POST /catalogue/pharmacies  (development only)
-// The catalogue fixture creates a VERIFIED pharmacy so it can be stocked and
-// searched immediately. It is not a verification workflow and is not mounted
-// when NODE_ENV=production.
-const createVerifiedPharmacy = (req, res) => {
-  return createPharmacyWithStatus(req, res, 'VERIFIED');
+// POST /pharmacies/mine  body: { name, area, address, phone, licenceNumber }
+// One pharmacy per account. Development auto-verifies it so the owner can stock
+// and search it; production would need a real verification workflow.
+const registerMyPharmacy = async (req, res) => {
+  try {
+    const existing = await prisma.pharmacy.findUnique({
+      where: { ownerId: req.session.userId },
+    });
+
+    if (existing) {
+      res.status(400).json({ error: 'This account already registered a pharmacy' });
+      return;
+    }
+
+    const status = config.nodeEnv === 'production' ? 'PENDING' : 'VERIFIED';
+    return createPharmacyWithStatus(req, res, status, req.session.userId);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Could not register the pharmacy' });
+  }
+};
+
+// POST /pharmacies  body: { name, area, address, phone, licenceNumber }  (development only)
+// The public create route starts every pharmacy as PENDING and unowned.
+const createPharmacy = (req, res) => {
+  return createPharmacyWithStatus(req, res, 'PENDING', null);
 };
 
 module.exports = {
   getAll,
   getById,
+  getMine,
+  registerMyPharmacy,
   createPharmacy,
-  createVerifiedPharmacy,
 };

@@ -78,6 +78,11 @@ const createStock = async (req, res) => {
       return;
     }
 
+    if (pharmacy.ownerId !== req.session.userId) {
+      res.status(403).json({ error: 'You can only add stock to your own pharmacy' });
+      return;
+    }
+
     const existing = await prisma.stockItem.findMany({
       where: { pharmacyId: pharmacyId, medicineId: medicineId },
       take: 1,
@@ -126,10 +131,18 @@ const updateStock = async (req, res) => {
       return;
     }
 
-    const existing = await prisma.stockItem.findUnique({ where: { id: id } });
+    const existing = await prisma.stockItem.findUnique({
+      where: { id: id },
+      include: { pharmacy: { select: { ownerId: true } } },
+    });
 
     if (!existing) {
       res.status(404).json({ error: 'Stock row not found' });
+      return;
+    }
+
+    if (existing.pharmacy.ownerId !== req.session.userId) {
+      res.status(403).json({ error: 'You can only change your own pharmacy stock' });
       return;
     }
 
@@ -160,10 +173,18 @@ const deleteStock = async (req, res) => {
       return;
     }
 
-    const existing = await prisma.stockItem.findUnique({ where: { id: id } });
+    const existing = await prisma.stockItem.findUnique({
+      where: { id: id },
+      include: { pharmacy: { select: { ownerId: true } } },
+    });
 
     if (!existing) {
       res.status(404).json({ error: 'Stock row not found' });
+      return;
+    }
+
+    if (existing.pharmacy.ownerId !== req.session.userId) {
+      res.status(403).json({ error: 'You can only change your own pharmacy stock' });
       return;
     }
 

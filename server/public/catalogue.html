@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Velora — Catalogue</title>
-  <meta name="description" content="Development catalogue for medicines, pharmacies and stock.">
+  <meta name="description" content="Manage medicines and the stock of your pharmacy.">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -22,14 +22,23 @@
     </div>
 
     <h1 class="page-title">Catalogue</h1>
-    <p class="page-lede">Add medicines, pharmacies and stock. This is a development tool: the write routes return 404 when <code>NODE_ENV=production</code>.</p>
+    <p class="page-lede">Add medicines and manage the stock of the pharmacy registered to your account. This is a development tool: the write routes return 404 when <code>NODE_ENV=production</code>.</p>
 
     <p id="catalogue-message" class="state" role="status" hidden></p>
+
+    <section id="pharmacy-panel" class="catalogue-pharmacy" hidden>
+      <h2 class="section-title">Your pharmacy</h2>
+      <p id="pharmacy-name" class="pharmacy-line"></p>
+      <p id="pharmacy-meta" class="hint"></p>
+    </section>
+
+    <p id="pharmacy-empty" class="state state-empty" hidden></p>
+    <p id="pharmacy-login" class="hint" hidden><a id="pharmacy-login-link" href="/account.html">Log in or create an account</a></p>
 
     <section class="catalogue-grid">
       <form id="add-medicine-form" class="form-card" novalidate>
         <h2 class="form-title">Add a medicine</h2>
-        <p class="hint">The name must be unique.</p>
+        <p class="hint">The name must be unique. This adds to the shared medicine list.</p>
 
         <label class="field-label" for="medicine-name">Name</label>
         <input id="medicine-name" name="name" type="text" placeholder="e.g. Cetzine" required>
@@ -40,34 +49,9 @@
         <button type="submit" class="primary-button">Add medicine</button>
       </form>
 
-      <form id="add-pharmacy-form" class="form-card" novalidate>
-        <h2 class="form-title">Add a pharmacy</h2>
-        <p class="hint">Catalogue pharmacies are created VERIFIED so they can be stocked and searched. The public create route still starts PENDING.</p>
-
-        <label class="field-label" for="pharmacy-name">Name</label>
-        <input id="pharmacy-name" name="name" type="text" required>
-
-        <label class="field-label" for="pharmacy-area">Area</label>
-        <input id="pharmacy-area" name="area" type="text" required>
-
-        <label class="field-label" for="pharmacy-address">Address</label>
-        <input id="pharmacy-address" name="address" type="text" required>
-
-        <label class="field-label" for="pharmacy-phone">Phone</label>
-        <input id="pharmacy-phone" name="phone" type="tel" inputmode="numeric" required>
-
-        <label class="field-label" for="pharmacy-licence">Licence number</label>
-        <input id="pharmacy-licence" name="licenceNumber" type="text" required>
-
-        <button type="submit" class="primary-button">Add pharmacy</button>
-      </form>
-
-      <form id="add-stock-form" class="form-card" novalidate>
+      <form id="add-stock-form" class="form-card" novalidate hidden>
         <h2 class="form-title">Add stock</h2>
-        <p class="hint">Stock can be added to a verified pharmacy.</p>
-
-        <label class="field-label" for="stock-pharmacy">Pharmacy</label>
-        <select id="stock-pharmacy" name="pharmacyId" required></select>
+        <p id="stock-pharmacy-label" class="hint"></p>
 
         <label class="field-label" for="stock-medicine">Medicine</label>
         <select id="stock-medicine" name="medicineId" required></select>
@@ -95,22 +79,9 @@
       </div>
     </section>
 
-    <section class="catalogue-section">
-      <h2 class="section-title">Verified pharmacies</h2>
-      <p id="pharmacy-empty" class="hint" hidden>No verified pharmacies yet.</p>
-      <div class="table-wrap">
-        <table class="catalogue-table">
-          <thead>
-            <tr><th scope="col">ID</th><th scope="col">Name</th><th scope="col">Area</th></tr>
-          </thead>
-          <tbody id="pharmacy-rows"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="catalogue-section">
-      <h2 class="section-title">Stock at the selected pharmacy</h2>
-      <p id="stock-empty" class="hint" hidden>Select a pharmacy with stock.</p>
+    <section id="stock-section" class="catalogue-section" hidden>
+      <h2 class="section-title">Stock at your pharmacy</h2>
+      <p id="stock-empty" class="hint" hidden>No stock at your pharmacy.</p>
       <div class="table-wrap">
         <table class="catalogue-table catalogue-stock-table">
           <thead>
@@ -123,7 +94,7 @@
   </main>
 
   <footer class="site-footer">
-    <div class="wrap">Velora · development build · search, accounts, holds and catalogue.</div>
+    <div class="wrap">Velora · development build · search, accounts, holds and pharmacy stock.</div>
   </footer>
 
   <script src="/catalogue.js"></script>
