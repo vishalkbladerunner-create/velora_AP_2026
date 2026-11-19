@@ -34,12 +34,12 @@ Express App Middleware Chain (server/src/app.js)
   ├─ Custom Request Logger (server/src/middlewares/logger.js)
   ├─ express-session (HttpOnly, SameSite=Lax)
   ├─ express.static() [public/]
-  └─ Route Handlers (/health, /medicines, /pharmacies, /stock, /auth, /holds, /catalogue)
+  └─ Route Handlers (/health, /medicines, /pharmacies, /stock, /auth, /holds)
            │
            ▼
 Controllers (server/src/controllers/)
   ├─ Validation, bracket-query guards, integer casting
-  ├─ Session guard + hold ownership check
+  ├─ Session guard + hold/pharmacy ownership checks
   └─ Status code mapping & response formatting
            │
            ▼
@@ -53,7 +53,7 @@ PostgreSQL Database (schema: public)
    - Inbound HTTP payloads pass first through `express.json()`.
    - Logging is executed by custom middleware printing `METHOD URL` ([`server/src/middlewares/logger.js`](../server/src/middlewares/logger.js)).
    - Static asset requests (such as `index.html`, `pharmacy.html`, `account.html`, `catalogue.html`, `app.js`, and `styles.css`) are served from `server/public/` before API routing.
-   - Resource routers handle `/health`, `/medicines`, `/pharmacies`, `/stock`, `/auth`, `/holds`, and the development `/catalogue` fixture.
+   - Resource routers handle `/health`, `/medicines`, `/pharmacies` (including `/mine`), `/stock`, `/auth`, and `/holds`.
    - Unmatched paths fall through to a terminal 404 handler that dispatches a structured JSON error `{ "error": "Route not found" }` and terminates the request without invoking `next()`.
 
 2. **Environment & Fail-Fast Configuration ([`server/src/config/env.js`](../server/src/config/env.js)):**
@@ -90,7 +90,7 @@ The database schema ([`server/prisma/schema.prisma`](../server/prisma/schema.pri
                                                     └─────────────────┘
 ```
 
-A `User` stores an id, name, unique mobile number, bcrypt `passwordHash` and `createdAt`. A `Hold` stores an id, `userId`, `stockItemId`, quantity, status (`ACTIVE`, `CANCELLED` or `EXPIRED`), `expiresAt` and `createdAt`. `User` has many holds; `StockItem` has many holds.
+A `User` stores an id, name, unique mobile number, bcrypt `passwordHash` and `createdAt`. A `Hold` stores an id, `userId`, `stockItemId`, quantity, status (`ACTIVE`, `CANCELLED` or `EXPIRED`), `expiresAt` and `createdAt`. `User` has many holds and can own one `Pharmacy` through the nullable unique `ownerId`; seeded pharmacies have no owner. `StockItem` has many holds.
 
 ### Relational Integrity Rules
 
@@ -102,6 +102,7 @@ A `User` stores an id, name, unique mobile number, bcrypt `passwordHash` and `cr
 6. **Account Identity:** `User.phone` is unique. The password is stored only as a bcrypt hash and is never returned by an endpoint.
 7. **Hold Ownership:** A `Hold` has one `userId` and one `stockItemId`; only the owner may cancel it, and the check returns `403` for anyone else.
 8. **Atomic Stock:** A hold is created inside `$transaction`: `updateMany` decrements only when `quantity >= requested`, so two users cannot reserve the same last strip. Cancelling or expiring the hold increments the row back once.
+9. **Pharmacy Ownership:** `Pharmacy.ownerId` is nullable and unique, so one account owns at most one pharmacy. `POST`/`PUT`/`DELETE /stock` compare the session user with the row’s `ownerId` and return `403` for anyone else.
 
 ---
 
@@ -135,13 +136,14 @@ All API endpoints and operational workflows were verified through end-to-end com
 - **t0 · Health Check:** `GET /health` confirms runtime health returning `200 {"ok":true}`.
 - **t1 · Medicines API (Commit 14):** 10/10 checks passing. Validates name filtering, integer validation on `:id`, duplicate prevention, and blocking deletion of medicines linked to active stock rows.
 - **t2 · Pharmacies API (Commit 15):** 13/13 checks passing. Validates that search returns only verified pharmacies with stock quantity > 0, verifies cheapest-first price sorting, and verifies that `GET /pharmacies/5` (unverified `PENDING` pharmacy) returns `404 Not Found`.
-- **t3 · Stock API (Commit 16):** 11/11 checks passing. Confirms listing by `pharmacyId`, foreign-key existence validation for parents, compound uniqueness prevention (`400 Stock row already exists`), non-negative quantity validation, and `204` deletion.
+- **t3 · Stock reads (Commit 16):** 3/3 checks passing. Confirms listing by `pharmacyId`, invalid-id `400`, bracket-query `400`, and PENDING exclusion. Writes are now owner-only and are covered by t9.
 - **t4 · Envelope & Status Code Sweep (Commit 19):** 8/8 checks passing. Confirms the status set, validates `{ error }` envelope structure, ensures terminal 404 on invalid routes, and verifies bracket parameter rejection (`?name[]=dolo` → `400`).
 - **t5 · Client Wiring (Commit 18):** Verified on desktop (1280px) and mobile (390px) viewports. Search results link to `/pharmacy.html?id=<id>`, displaying pharmacy metadata and stock table; 404 and API down states render graceful human-readable errors.
 - **t6 · Seed Idempotency & pg Demo (Commit 17):** Running `node prisma/dev-seed.js` twice produces zero net creations on subsequent runs. `node course-demos/pg/index.js 1` proves identical row counts between raw `pg.Pool` and Prisma Client.
 - **t7 · Accounts:** 9/9 checks passing. Register, duplicate phone, login, bad password, `/auth/me`, logout, and a stored `$2b$` hash with no hash in any response.
 - **t8 · Holds:** 10/10 checks passing. Reserve, list, cross-user `403`, cancel with stock restore, insufficient stock, PENDING stock, expiry restore, and no double restore.
-- **t9 · Catalogue page:** 4/4 checks passing. Add a medicine, add a VERIFIED pharmacy through the development fixture, add stock in rupees, and confirm the new medicine appears in search.
+- **t9 · Pharmacy ownership:** 12/12 checks passing. `GET /pharmacies/mine` is 404 before registration, `POST /pharmacies/mine` creates one VERIFIED pharmacy, a second registration is 400, own stock is 201, another pharmacy and another user get 403, an anonymous write gets 401, and an owner `PUT`/`DELETE` returns 200/204.
+- **t10 · Catalogue page:** 4/4 checks passing. Signup with pharmacy fields creates the account and pharmacy, the page shows only that pharmacy, stock is added in rupees, and the medicine appears in search.
 
 ---
 
@@ -150,7 +152,7 @@ All API endpoints and operational workflows were verified through end-to-end com
 The following elements remain excluded or deliberately limited:
 
 1. **Local-only sessions and holds:** Accounts use bcrypt and Express MemoryStore sessions; holds use `$transaction` + `updateMany`. Both are the approved exception recorded in `AGENTS.md`. The MemoryStore loses sessions on restart and is not a production store; there is no CSRF token, rate limiting, email verification or password reset.
-2. **No roles, admin workflow or payments:** There is no pharmacist or admin role, no licence-verification workflow, no email/SMS and no payment integration. Catalogue write routes remain development-only. The catalogue page’s `POST /catalogue/pharmacies` is a development fixture that creates a VERIFIED row; it is not a staff verification tool and is not mounted in production.
+2. **No roles, admin workflow or payments:** There is no pharmacist or admin role, no licence-verification workflow, no email/SMS and no payment integration. Catalogue write routes remain development-only. An account can register one pharmacy and change only that pharmacy’s stock; the development build auto-verifies it, while production would keep it PENDING until a real verification workflow exists.
 3. **No Geolocation or Spatial Indexing:** Proximity matching uses textual area containment rather than GPS coordinates, PostGIS, or haversine calculations.
 4. **No MongoDB or Polyglot Persistence:** PostgreSQL and Prisma comprise the entire database tier; NoSQL engines are deliberately omitted.
 5. **No Client Frameworks or Heavy Toolchains:** The front-end contains no React, Vue, TypeScript, Tailwind, Webpack, or Babel. It utilizes standard DOM APIs with zero build steps.
@@ -162,7 +164,7 @@ The following elements remain excluded or deliberately limited:
 
 | Member | Branch Responsibilities | Key Deliverables |
 | --- | --- | --- |
-| **Vishal** | Toolchain, Express Skeleton, Search Client, Documentation, Accounts and Holds, Development Catalogue | Architecture design, README, basic client, PR review, approved-exception auth/hold build, catalogue page |
+| **Vishal** | Toolchain, Express Skeleton, Search Client, Documentation, Accounts and Holds, Pharmacy Ownership, Development Catalogue | Architecture design, README, basic client, PR review, approved-exception auth/hold build, owner-only stock and catalogue page |
 | **Manav** | Prisma Schema, Migration, Dev Seed, Medicines & Pharmacies APIs | Data model migrations, seed fixtures, t1/t2 test suites |
 | **Yash** | Error Utilities, Course Demos, Viva Presentation | HTTP/FS/Event-Loop demos; presents t4 |
 | **Sayem** | Stock API, Direct pg Demo, Client Detail Wiring, Contract Sweep, Viva & Report | Commits c16–c20: Stock CRUD, pg pool demo, pharmacy detail page, sweep audit, viva script and final report |

@@ -683,7 +683,7 @@ body {
 /* Development catalogue */
 .catalogue-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -748,4 +748,41 @@ body {
     padding: 6px 4px;
     font-size: 12px;
   }
+}
+
+.form-subtitle {
+  margin: 22px 0 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.catalogue-pharmacy {
+  margin-bottom: 16px;
+  padding: 16px 20px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.catalogue-pharmacy .section-title {
+  margin-bottom: 6px;
+}
+
+.pharmacy-line {
+  margin: 0 0 2px;
+  font-weight: 700;
+}
+
+.pharmacy-section {
+  margin-bottom: 22px;
+}
+
+.pharmacy-section .form-card {
+  margin-top: 12px;
+}
+
+.pharmacy-section .form-card .primary-button {
+  margin-top: 4px;
 }

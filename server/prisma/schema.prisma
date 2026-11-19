@@ -29,6 +29,8 @@ model Pharmacy {
   phone         String
   licenceNumber String      @unique
   status        String      @default("PENDING")
+  ownerId       Int?        @unique
+  owner         User?       @relation(fields: [ownerId], references: [id])
   stock         StockItem[]
 }
 
@@ -50,12 +52,13 @@ model StockItem {
 
 // A Velora account. The password is stored only as a bcrypt hash.
 model User {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   name         String
-  phone        String   @unique
+  phone        String    @unique
   passwordHash String
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
   holds        Hold[]
+  pharmacy     Pharmacy?
 }
 
 // A 30-minute reservation against one stock row.

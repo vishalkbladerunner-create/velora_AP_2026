@@ -1,14 +1,22 @@
 const messageEl = document.getElementById('catalogue-message');
 const medicineRows = document.getElementById('medicine-rows');
 const medicineEmpty = document.getElementById('medicine-empty');
-const pharmacyRows = document.getElementById('pharmacy-rows');
-const pharmacyEmpty = document.getElementById('pharmacy-empty');
 const stockRows = document.getElementById('stock-rows');
 const stockEmpty = document.getElementById('stock-empty');
-const stockPharmacy = document.getElementById('stock-pharmacy');
 const stockMedicine = document.getElementById('stock-medicine');
 const stockQuantity = document.getElementById('stock-quantity');
 const stockPrice = document.getElementById('stock-price');
+const stockForm = document.getElementById('add-stock-form');
+const stockSection = document.getElementById('stock-section');
+const stockPharmacyLabel = document.getElementById('stock-pharmacy-label');
+const pharmacyPanel = document.getElementById('pharmacy-panel');
+const pharmacyName = document.getElementById('pharmacy-name');
+const pharmacyMeta = document.getElementById('pharmacy-meta');
+const pharmacyEmpty = document.getElementById('pharmacy-empty');
+const pharmacyLogin = document.getElementById('pharmacy-login');
+const pharmacyLoginLink = document.getElementById('pharmacy-login-link');
+
+let myPharmacy = null;
 
 function showMessage(text, kind) {
   messageEl.textContent = text;
@@ -79,53 +87,72 @@ async function loadMedicines() {
   });
 }
 
-async function loadPharmacies() {
-  const response = await fetch('/pharmacies');
-  const pharmacies = await readJson(response);
+function showPharmacyState(state) {
+  stockRows.replaceChildren();
+  stockEmpty.hidden = true;
 
-  if (!response.ok) {
-    showMessage(pharmacies.error || 'Could not load pharmacies.', 'error');
+  if (state === 'ready') {
+    pharmacyPanel.hidden = false;
+    pharmacyEmpty.hidden = true;
+    pharmacyLogin.hidden = true;
+    stockForm.hidden = false;
+    stockSection.hidden = false;
     return;
   }
 
-  pharmacyRows.replaceChildren();
-  pharmacyEmpty.hidden = pharmacies.length !== 0;
+  pharmacyPanel.hidden = true;
+  stockForm.hidden = true;
+  stockSection.hidden = true;
 
-  pharmacies.forEach((pharmacy) => {
-    const tr = document.createElement('tr');
+  if (state === 'login') {
+    pharmacyEmpty.hidden = true;
+    pharmacyLoginLink.textContent = 'Log in or create an account';
+    pharmacyLogin.hidden = false;
+    return;
+  }
 
-    const id = document.createElement('td');
-    id.textContent = String(pharmacy.id);
-    tr.appendChild(id);
+  pharmacyEmpty.textContent = 'No pharmacy registered for this account. Register one in your account to add stock.';
+  pharmacyEmpty.hidden = false;
+  pharmacyLoginLink.textContent = 'Open your account';
+  pharmacyLogin.hidden = false;
+}
 
-    const name = document.createElement('td');
-    name.textContent = pharmacy.name;
-    tr.appendChild(name);
+async function loadMyPharmacy() {
+  const response = await fetch('/pharmacies/mine');
 
-    const area = document.createElement('td');
-    area.textContent = pharmacy.area;
-    tr.appendChild(area);
+  if (response.status === 401) {
+    myPharmacy = null;
+    showPharmacyState('login');
+    return;
+  }
 
-    pharmacyRows.appendChild(tr);
-  });
+  if (response.status === 404) {
+    myPharmacy = null;
+    showPharmacyState('none');
+    return;
+  }
 
-  setOptions(stockPharmacy, pharmacies, 'id', (pharmacy) => {
-    return pharmacy.name + ' · ' + pharmacy.area;
-  });
+  const body = await readJson(response);
+
+  if (!response.ok) {
+    showMessage(body.error || 'Could not load your pharmacy.', 'error');
+    return;
+  }
+
+  myPharmacy = body;
+  pharmacyName.textContent = body.name;
+  pharmacyMeta.textContent = body.area + ' · ' + body.status + ' · licence ' + body.licenceNumber;
+  stockPharmacyLabel.textContent = 'Adding stock to ' + body.name + '.';
+  showPharmacyState('ready');
+  await loadStock();
 }
 
 async function loadStock() {
-  const pharmacyId = stockPharmacy.value;
-
-  stockRows.replaceChildren();
-
-  if (!pharmacyId) {
-    stockEmpty.textContent = 'Add a verified pharmacy first.';
-    stockEmpty.hidden = false;
+  if (!myPharmacy) {
     return;
   }
 
-  const response = await fetch('/stock?pharmacyId=' + encodeURIComponent(pharmacyId));
+  const response = await fetch('/stock?pharmacyId=' + encodeURIComponent(myPharmacy.id));
   const rows = await readJson(response);
 
   if (!response.ok) {
@@ -133,7 +160,7 @@ async function loadStock() {
     return;
   }
 
-  stockEmpty.textContent = 'No stock at this pharmacy.';
+  stockRows.replaceChildren();
   stockEmpty.hidden = rows.length !== 0;
 
   rows.forEach((row) => {
@@ -183,48 +210,22 @@ document.getElementById('add-medicine-form').addEventListener('submit', async (e
   await loadMedicines();
 });
 
-document.getElementById('add-pharmacy-form').addEventListener('submit', async (event) => {
+stockForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const body = {
-    name: document.getElementById('pharmacy-name').value.trim(),
-    area: document.getElementById('pharmacy-area').value.trim(),
-    address: document.getElementById('pharmacy-address').value.trim(),
-    phone: document.getElementById('pharmacy-phone').value.trim(),
-    licenceNumber: document.getElementById('pharmacy-licence').value.trim(),
-  };
-
-  const response = await fetch('/catalogue/pharmacies', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  const created = await readJson(response);
-
-  if (!response.ok) {
-    showMessage(created.error || 'Could not add the pharmacy.', 'error');
+  if (!myPharmacy) {
+    showMessage('Register a pharmacy before adding stock.', 'error');
     return;
   }
 
-  event.target.reset();
-  showMessage('Pharmacy #' + created.id + ' added and verified.', 'success');
-  await loadPharmacies();
-});
-
-document.getElementById('add-stock-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  const pharmacyId = Number(stockPharmacy.value);
   const medicineId = Number(stockMedicine.value);
   const quantity = Number(stockQuantity.value);
   const price = Number(stockPrice.value);
   const pricePaise = Math.round(price * 100);
 
-  if (!Number.isInteger(pharmacyId) || !Number.isInteger(medicineId) ||
-      !Number.isInteger(quantity) || quantity < 0 ||
+  if (!Number.isInteger(medicineId) || !Number.isInteger(quantity) || quantity < 0 ||
       !Number.isFinite(price) || pricePaise <= 0) {
-    showMessage('Choose a pharmacy and medicine, then enter a quantity and a price.', 'error');
+    showMessage('Choose a medicine, then enter a quantity and a price.', 'error');
     return;
   }
 
@@ -232,12 +233,19 @@ document.getElementById('add-stock-form').addEventListener('submit', async (even
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      pharmacyId: pharmacyId,
+      pharmacyId: myPharmacy.id,
       medicineId: medicineId,
       quantity: quantity,
       pricePaise: pricePaise,
     }),
   });
+
+  if (response.status === 401) {
+    myPharmacy = null;
+    showPharmacyState('login');
+    showMessage('Your session expired. Log in again.', 'error');
+    return;
+  }
 
   const body = await readJson(response);
 
@@ -246,16 +254,13 @@ document.getElementById('add-stock-form').addEventListener('submit', async (even
     return;
   }
 
-  const pharmacyName = stockPharmacy.options[stockPharmacy.selectedIndex].textContent;
-  showMessage('Stock added: ' + body.medicine.name + ' at ' + pharmacyName + '.', 'success');
+  showMessage('Stock added: ' + body.medicine.name + ' at ' + myPharmacy.name + '.', 'success');
   await loadStock();
 });
 
-stockPharmacy.addEventListener('change', loadStock);
-
 async function loadAll() {
-  await Promise.all([loadMedicines(), loadPharmacies()]);
-  await loadStock();
+  await loadMedicines();
+  await loadMyPharmacy();
 }
 
 loadAll();

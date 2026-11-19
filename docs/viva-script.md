@@ -57,21 +57,43 @@ Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes,
 ### Check 3 — Stock API writes and pair uniqueness (t3)
 
 - **Presenter:** Sayem
-- **Focus:** Development-only write operations, parent existence validation, compound uniqueness.
-- **Setup:** `NODE_ENV=development`.
-- **Command:**
+- **Focus:** Development-only stock writes, pharmacy ownership, parent existence validation, compound uniqueness.
+- **Setup:** `NODE_ENV=development`; a demo owner session. One-time setup:
   ```bash
-  curl -i -X POST http://localhost:3000/stock \
+  # Register the demo owner (skip if it already exists)
+  curl -c /tmp/owner.jar -X POST http://localhost:3000/auth/register \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"Demo Owner","phone":"9000000001","password":"password123"}'
+
+  # Register the owner's pharmacy
+  curl -b /tmp/owner.jar -X POST http://localhost:3000/pharmacies/mine \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"Demo Pharmacy","area":"Demo Area","address":"1 Demo Road","phone":"9000000091","licenceNumber":"HR-SNP-DEMO-0091"}'
+
+  PHARMACY_ID=$(curl -s -b /tmp/owner.jar http://localhost:3000/pharmacies/mine \
+    | python3 -c 'import sys,json;print(json.load(sys.stdin)["id"])')
+  ```
+- **Commands:**
+  ```bash
+  # Own pharmacy: 201, then 400 on the duplicate pair
+  curl -i -b /tmp/owner.jar -X POST http://localhost:3000/stock \
+    -H 'Content-Type: application/json' \
+    -d "{\"pharmacyId\":$PHARMACY_ID,\"medicineId\":2,\"quantity\":10,\"pricePaise\":5000}"
+
+  # Someone else's pharmacy: 403
+  curl -i -b /tmp/owner.jar -X POST http://localhost:3000/stock \
     -H 'Content-Type: application/json' \
     -d '{"pharmacyId":1,"medicineId":2,"quantity":10,"pricePaise":5000}'
   ```
 - **Expected Output:**
-  - First run: `HTTP/1.1 201 Created` returning the new stock row with associated medicine data and `updatedAt`.
-  - Second run (immediate re-run): `HTTP/1.1 400 Bad Request` with `{"error":"Stock row already exists; use PUT to change it"}`.
+  - First run: `HTTP/1.1 201 Created` with the new stock row and medicine.
+  - Second run: `HTTP/1.1 400 Bad Request` with `{"error":"Stock row already exists; use PUT to change it"}`.
+  - Other pharmacy: `HTTP/1.1 403 Forbidden` with `{"error":"You can only add stock to your own pharmacy"}`.
 - **What it demonstrates:**
-  - Check-before-write validation: Verifies parent `Pharmacy` and `Medicine` exist before insert.
-  - Prevention of duplicate `(pharmacyId, medicineId)` pairs mapped to `400` instead of uncaught database constraint crashes.
-- **Fallback:** Open [`docs/api-checks.md`](api-checks.md#stock-commit-16-test-t3), Stock section, rows 4 and 7.
+  - Check-before-write validation: parent `Pharmacy` and `Medicine` must exist.
+  - Pharmacy ownership: the session user must match `Pharmacy.ownerId`; a different pharmacy is `403`, and no session is `401`.
+  - Duplicate `(pharmacyId, medicineId)` pairs become `400`, not an uncaught constraint error.
+- **Fallback:** Open [`docs/api-checks.md`](api-checks.md#pharmacy-ownership-test-t9), Pharmacy ownership section, rows 6–11.
 
 ---
 
@@ -176,8 +198,9 @@ Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes,
   - bcrypt hashing, an HttpOnly session cookie, `401` without a session and `403` for another user's hold.
   - `$transaction` + `updateMany` so two users cannot reserve the same last strip; an expired hold returns its stock once.
   - The approved exception recorded in `AGENTS.md`; the MemoryStore and missing CSRF token are stated as local-only limits.
-  - **Catalogue:** open `http://localhost:3000/catalogue.html` to add a medicine, a verified pharmacy and stock from the browser. It is a development tool, not a staff role; the public pharmacy create route still starts PENDING.
-- **Fallback:** Open [`docs/api-checks.md`](api-checks.md#accounts-approved-exception-test-t7), Accounts, Holds and Catalogue sections.
+  - **Pharmacy ownership:** the account form can register one pharmacy; `GET /pharmacies/mine` returns it, and `/catalogue.html` lets the owner add stock only to that pharmacy. Another pharmacy is `403`.
+  - The catalogue is a development tool, not a staff role; the public pharmacy create route still starts PENDING, and the development build auto-verifies the account's pharmacy.
+- **Fallback:** Open [`docs/api-checks.md`](api-checks.md#accounts-approved-exception-test-t7), Accounts, Holds, Pharmacy ownership and Catalogue sections.
 
 ---
 

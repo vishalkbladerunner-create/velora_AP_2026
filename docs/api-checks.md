@@ -3,7 +3,7 @@
 Manual checks run with `curl` against a local PostgreSQL filled by
 `node prisma/dev-seed.js`. Success returns the bare resource; failure returns
 `{ "error": "..." }`. Allowed codes: 200, 201, 204, 400, 401, 403, 404, 500.
-401 and 403 are used only by `/auth` and `/holds` (approved exception).
+401 and 403 are used only by `/auth`, `/holds`, `/stock` and `/pharmacies/mine`.
 
 ## Route index
 
@@ -23,10 +23,11 @@ Manual checks run with `curl` against a local PostgreSQL filled by
 | GET | `/pharmacies/:id` | verified id | 200 | 200 | Pharmacies section, row 6 |
 | POST | `/pharmacies` | full body | 201 | 201 | Pharmacies section, row 10 |
 | GET | `/stock?pharmacyId=1` | seeded id | 200 | 200 | Stock section, row 1 |
-| POST | `/stock` | full body | 201 | 201 | Stock section, row 4 |
-| PUT | `/stock/1` | quantity + price | 200 | 200 | Stock section, row 8 |
-| DELETE | `/stock/21` | none | 204 | 204 | Stock section, row 10 |
-| POST | `/catalogue/pharmacies` | full body | 201 | 201 | Catalogue section, row 1 |
+| POST | `/stock` | owner session + body | 201 | 201 | Pharmacy ownership, row 6 |
+| PUT | `/stock/:id` | owner session | 200 | 200 | Pharmacy ownership, success note |
+| DELETE | `/stock/:id` | owner session | 204 | 204 | Pharmacy ownership, success note |
+| GET | `/pharmacies/mine` | session cookie | 200 | 200 | Pharmacy ownership, row 4 |
+| POST | `/pharmacies/mine` | full body + session | 201 | 201 | Pharmacy ownership, row 4 |
 | POST | `/auth/register` | name + phone + password | 201 | 201 | Accounts section, row 2 |
 | POST | `/auth/login` | phone + password | 200 | 200 | Accounts section, row 5 |
 | POST | `/auth/logout` | session cookie | 204 | 204 | Accounts section, row 8 |
@@ -106,23 +107,17 @@ no route returned a 500.
 The run leaves one PENDING "Test Chemist" row (licence `HR-SNP-TEST-0199`) in
 the local database; it never appears in search because it is not VERIFIED.
 
-## Stock (commit 16, test t3)
+## Stock reads (commit 16, test t3)
 
-Run on 2026-11-17 by Sayem, `NODE_ENV=development`, seeded database (20 stock rows).
+Run on 2026-11-17 by Sayem, `NODE_ENV=development`, seeded database. Since
+2026-11-20, stock writes require a signed-in pharmacy owner; those checks are
+recorded in Pharmacy ownership (test t9).
 
 | # | Method | Request | Expected | Actual | Body / note |
 | --- | --- | --- | --- | --- | --- |
 | 1 | `GET` | `/stock?pharmacyId=1` | 200 | 200 | 5 rows, each carrying its medicine |
 | 2 | `GET` | `/stock?pharmacyId=abc` | 400 | 400 | `{"error":"Invalid pharmacy id"}` |
 | 3 | `GET` | `/stock?pharmacyId[]=1` | 400 | 400 | `{"error":"Invalid query parameter: pharmacyId[]"}` |
-| 4 | `POST` | `/stock` `{"pharmacyId":1,"medicineId":2,"quantity":10,"pricePaise":5000}` | 201 | 201 | row created; visible in `GET /pharmacies/1` |
-| 5 | `POST` | `/stock` `{"pharmacyId":1,"medicineId":3,"quantity":-1,"pricePaise":5000}` | 400 | 400 | `{"error":"Invalid stock fields"}` |
-| 6 | `POST` | `/stock` `{"pharmacyId":999,"medicineId":1,"quantity":10,"pricePaise":5000}` | 404 | 404 | `{"error":"Pharmacy or medicine not found"}` |
-| 7 | `POST` | `/stock` same pair again (`pharmacyId:1, medicineId:2`) | 400 | 400 | `{"error":"Stock row already exists; use PUT to change it"}` |
-| 8 | `PUT` | `/stock/1` `{"quantity":45,"pricePaise":3200}` | 200 | 200 | updated row returned; `updatedAt` is refreshed |
-| 9 | `PUT` | `/stock/999` `{"quantity":10,"pricePaise":5000}` | 404 | 404 | `{"error":"Stock row not found"}` |
-| 10 | `DELETE` | `/stock/21` (the row created in row 4) | 204 | 204 | empty body |
-| 11 | `DELETE` | `/stock/999` | 404 | 404 | `{"error":"Stock row not found"}` |
 
 PENDING pharmacies are excluded from the list: `GET /stock?pharmacyId=5` returns `[]`.
 
@@ -134,7 +129,7 @@ Run on 2026-11-17 by Sayem, verifying status codes, error shapes, and absence of
 | --- | --- | --- | --- | --- | --- |
 | 1 | Terminal 404 | `GET /nonexistent-route` | 404 | 404 | `{"error":"Route not found"}` |
 | 2 | Terminal 404 method | `POST /nonexistent` | 404 | 404 | `{"error":"Route not found"}` |
-| 3 | Approved code set | All endpoints | 200/201/204/400/401/403/404/500 | Confirmed | 401/403 only on `/auth` and `/holds`; no 409, 422 or 429 |
+| 3 | Approved code set | All endpoints | 200/201/204/400/401/403/404/500 | Confirmed | 401/403 only on `/auth`, `/holds`, `/stock` and `/pharmacies/mine`; no 409, 422 or 429 |
 | 4 | Error envelope format | All 4xx and 5xx responses | `{"error":"..."}` | Confirmed | Never returns bare strings, HTML errors, or Prisma internals |
 | 5 | Stack trace suppression | Uncaught / database errors | 500 `{"error":"..."}` | Confirmed | Errors logged server-side via `console.error`; stack traces never leak |
 | 6 | 204 No Content body | `DELETE /medicines/:id`, `DELETE /stock/:id` | 204 empty | Confirmed | `res.status(204).send()` sends empty body |
@@ -176,15 +171,36 @@ Run on 2026-11-19 by Vishal against the same test database. Stock row 1 starts a
 | 9 | `GET` | `/holds` after moving a hold’s `expiresAt` into the past in the test database | 200 | 200 | hold `EXPIRED`; stock restored 37 → 40 |
 | 10 | `GET` | `/holds` again | 200 | 200 | stock still 40; the expiry restore runs once |
 
-## Catalogue page (development tool, test t9)
+## Pharmacy ownership (test t9)
 
-Run on 2026-11-20 by Vishal against the live local database, `NODE_ENV=development`. The page is `http://localhost:3000/catalogue.html`.
+Run on 2026-11-20 by Vishal against the live local database, `NODE_ENV=development`. Owner A registered a pharmacy; Owner B registered a separate account.
 
 | # | Method | Request | Expected | Actual | Body / note |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `POST` | `/catalogue/pharmacies` `{"name":"ZZ Test Chemist","area":"Test Area","address":"1 Test Road","phone":"9000000999","licenceNumber":"HR-SNP-TEST-0999"}` | 201 | 201 | row created as `VERIFIED`; the catalog page’s verified table updates |
-| 2 | `GET` | `/pharmacies` | 200 | 200 | the new pharmacy is present |
-| 3 | `POST` | `/medicines` `{"name":"ZZ Test Med","form":"TABLET"}` then `/stock` `{"pharmacyId":7,"medicineId":14,"quantity":5,"pricePaise":1200}` | 201 | 201 | stock row created; `GET /pharmacies?medicine=ZZ Test Med` returns the new pharmacy |
-| 4 | `DELETE` | `/stock/22`, `/medicines/14`, then remove the test pharmacy in the test database | 204 / 204 / removed | 204 / 204 / removed | fixtures cleaned up; counts return to 6 pharmacies, 12 medicines, 20 stock rows |
+| 1 | `GET` | `/pharmacies/mine` with no cookie | 401 | 401 | `{"error":"Authentication required"}` |
+| 2 | `POST` | `/auth/register` Owner A | 201 | 201 | no pharmacy yet |
+| 3 | `GET` | `/pharmacies/mine` as A | 404 | 404 | `{"error":"No pharmacy registered"}` |
+| 4 | `POST` | `/pharmacies/mine` as A, full body | 201 | 201 | `status: VERIFIED`, `ownerId` = A |
+| 5 | `POST` | `/pharmacies/mine` as A again | 400 | 400 | `{"error":"This account already registered a pharmacy"}` |
+| 6 | `POST` | `/stock` as A for A’s pharmacy, medicine 1 | 201 | 201 | stock row 24 |
+| 7 | `POST` | `/stock` as A for pharmacy 1 (not A’s) | 403 | 403 | `{"error":"You can only add stock to your own pharmacy"}` |
+| 8 | `POST` | `/stock` as B for A’s pharmacy | 403 | 403 | same ownership check |
+| 9 | `PUT` | `/stock/24` as B | 403 | 403 | `{"error":"You can only change your own pharmacy stock"}` |
+| 10 | `DELETE` | `/stock/24` as B | 403 | 403 | same ownership check |
+| 11 | `POST` | `/stock` with no cookie | 401 | 401 | `{"error":"Authentication required"}` |
+| 12 | `GET` | `/pharmacies?medicine=dolo` | 200 | 200 | A’s pharmacy is included once it has stock |
 
-The page’s pharmacy form uses the development fixture so a new pharmacy can be stocked and searched immediately. The public `POST /pharmacies` is unchanged and still creates `PENDING`.
+A second owner account confirmed the success path on its own stock: `PUT /stock/26` returned 200 with the new quantity and price, and `DELETE /stock/26` returned 204. The test users, pharmacy and stock rows were removed afterward.
+
+## Catalogue page (development tool, test t10)
+
+Run on 2026-11-20 by Vishal in headless Chrome against the live local database.
+
+| # | Check | Result | Note |
+| --- | --- | --- | --- |
+| 1 | Create an account with the optional pharmacy fields | 201 + 201 | account and pharmacy created; the account page shows the pharmacy name and the registration form is hidden |
+| 2 | Open the catalogue as a user with no pharmacy | Pass | “No pharmacy registered for this account” is shown and the stock form is hidden |
+| 3 | Open the catalogue as the pharmacy owner | Pass | “Your pharmacy” shows the name, area, status and licence; the stock form is visible |
+| 4 | Add 3 units of Dolo 650 in rupees | 201 | the page shows “Stock added”, the stock table gains a row, and the medicine appears in search |
+
+The page sends `pharmacyId` from `/pharmacies/mine`, so it cannot be pointed at another pharmacy; the API returns `403` if it is (ownership row 7/8). The earlier `/catalogue/pharmacies` fixture was removed.
