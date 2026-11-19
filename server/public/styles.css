@@ -679,3 +679,73 @@ body {
 .detail-card {
   min-width: 0;
 }
+
+/* Development catalogue */
+.catalogue-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.catalogue-section {
+  margin-top: 28px;
+}
+
+.form-card select {
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 14px;
+  padding: 0 12px;
+  font-size: 15px;
+  color: var(--ink);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.form-card select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.catalogue-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  text-align: left;
+}
+
+.catalogue-table th {
+  padding: 10px 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  border-bottom: 2px solid var(--line);
+}
+
+.catalogue-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.catalogue-stock-table td:nth-child(3),
+.catalogue-stock-table td:nth-child(4),
+.catalogue-stock-table th:nth-child(3),
+.catalogue-stock-table th:nth-child(4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .catalogue-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .catalogue-table th,
+  .catalogue-table td {
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+}

@@ -133,10 +133,8 @@ const getById = async (req, res) => {
   }
 };
 
-// POST /pharmacies  body: { name, area, address, phone, licenceNumber }  (development only)
-// The server sets status; a status sent in the body is ignored, so every new
-// pharmacy starts as PENDING (the schema default).
-const createPharmacy = async (req, res) => {
+// Shared create path. The route decides the status; the request body never does.
+async function createPharmacyWithStatus(req, res, status) {
   try {
     // req.body is undefined when no JSON body was sent.
     const body = req.body || {};
@@ -165,6 +163,7 @@ const createPharmacy = async (req, res) => {
         address: body.address,
         phone: body.phone,
         licenceNumber: body.licenceNumber,
+        status: status,
       },
     });
 
@@ -173,10 +172,25 @@ const createPharmacy = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Could not create the pharmacy' });
   }
+}
+
+// POST /pharmacies  body: { name, area, address, phone, licenceNumber }  (development only)
+// The public create route starts every pharmacy as PENDING.
+const createPharmacy = (req, res) => {
+  return createPharmacyWithStatus(req, res, 'PENDING');
+};
+
+// POST /catalogue/pharmacies  (development only)
+// The catalogue fixture creates a VERIFIED pharmacy so it can be stocked and
+// searched immediately. It is not a verification workflow and is not mounted
+// when NODE_ENV=production.
+const createVerifiedPharmacy = (req, res) => {
+  return createPharmacyWithStatus(req, res, 'VERIFIED');
 };
 
 module.exports = {
   getAll,
   getById,
   createPharmacy,
+  createVerifiedPharmacy,
 };

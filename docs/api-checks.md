@@ -26,6 +26,7 @@ Manual checks run with `curl` against a local PostgreSQL filled by
 | POST | `/stock` | full body | 201 | 201 | Stock section, row 4 |
 | PUT | `/stock/1` | quantity + price | 200 | 200 | Stock section, row 8 |
 | DELETE | `/stock/21` | none | 204 | 204 | Stock section, row 10 |
+| POST | `/catalogue/pharmacies` | full body | 201 | 201 | Catalogue section, row 1 |
 | POST | `/auth/register` | name + phone + password | 201 | 201 | Accounts section, row 2 |
 | POST | `/auth/login` | phone + password | 200 | 200 | Accounts section, row 5 |
 | POST | `/auth/logout` | session cookie | 204 | 204 | Accounts section, row 8 |
@@ -174,3 +175,16 @@ Run on 2026-11-19 by Vishal against the same test database. Stock row 1 starts a
 | 8 | `POST` | `/holds` `{"stockItemId":18,"quantity":1}` (PENDING pharmacy 5) | 404 | 404 | `{"error":"Stock item not found"}` |
 | 9 | `GET` | `/holds` after moving a hold’s `expiresAt` into the past in the test database | 200 | 200 | hold `EXPIRED`; stock restored 37 → 40 |
 | 10 | `GET` | `/holds` again | 200 | 200 | stock still 40; the expiry restore runs once |
+
+## Catalogue page (development tool, test t9)
+
+Run on 2026-11-20 by Vishal against the live local database, `NODE_ENV=development`. The page is `http://localhost:3000/catalogue.html`.
+
+| # | Method | Request | Expected | Actual | Body / note |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `POST` | `/catalogue/pharmacies` `{"name":"ZZ Test Chemist","area":"Test Area","address":"1 Test Road","phone":"9000000999","licenceNumber":"HR-SNP-TEST-0999"}` | 201 | 201 | row created as `VERIFIED`; the catalog page’s verified table updates |
+| 2 | `GET` | `/pharmacies` | 200 | 200 | the new pharmacy is present |
+| 3 | `POST` | `/medicines` `{"name":"ZZ Test Med","form":"TABLET"}` then `/stock` `{"pharmacyId":7,"medicineId":14,"quantity":5,"pricePaise":1200}` | 201 | 201 | stock row created; `GET /pharmacies?medicine=ZZ Test Med` returns the new pharmacy |
+| 4 | `DELETE` | `/stock/22`, `/medicines/14`, then remove the test pharmacy in the test database | 204 / 204 / removed | 204 / 204 / removed | fixtures cleaned up; counts return to 6 pharmacies, 12 medicines, 20 stock rows |
+
+The page’s pharmacy form uses the development fixture so a new pharmacy can be stocked and searched immediately. The public `POST /pharmacies` is unchanged and still creates `PENDING`.

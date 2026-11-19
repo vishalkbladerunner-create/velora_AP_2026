@@ -7,7 +7,7 @@ Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes,
 
 | Team Member | Domain | Viva Checks |
 | --- | --- | --- |
-| **Vishal** | Project Overview, Architecture, Search, Accounts & Holds | Introduction, Check 2, Check 5, Check 7 |
+| **Vishal** | Project Overview, Architecture, Search, Accounts & Holds, Catalogue | Introduction, Check 2, Check 5, Check 7 |
 | **Manav** | Database Modeling, Prisma Schema, Seed, Medicines API | Check 1, Check 6 (Seed) |
 | **Sayem** | Stock API, Writes & Updates, Contract Sweep | Check 3, Architecture Summary |
 | **Yash** | Error Envelopes, Course Demos, PostgreSQL Driver Demo | Check 4, Check 6 (pg Demo) |
@@ -176,7 +176,8 @@ Presentation time: 14–16 minutes. If the examiner caps the viva at 15 minutes,
   - bcrypt hashing, an HttpOnly session cookie, `401` without a session and `403` for another user's hold.
   - `$transaction` + `updateMany` so two users cannot reserve the same last strip; an expired hold returns its stock once.
   - The approved exception recorded in `AGENTS.md`; the MemoryStore and missing CSRF token are stated as local-only limits.
-- **Fallback:** Open [`docs/api-checks.md`](api-checks.md#accounts-approved-exception-test-t7), Accounts and Holds sections.
+  - **Catalogue:** open `http://localhost:3000/catalogue.html` to add a medicine, a verified pharmacy and stock from the browser. It is a development tool, not a staff role; the public pharmacy create route still starts PENDING.
+- **Fallback:** Open [`docs/api-checks.md`](api-checks.md#accounts-approved-exception-test-t7), Accounts, Holds and Catalogue sections.
 
 ---
 
