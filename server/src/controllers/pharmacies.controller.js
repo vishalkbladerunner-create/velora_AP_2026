@@ -225,6 +225,45 @@ const registerMyPharmacy = async (req, res) => {
   }
 };
 
+// PUT /pharmacies/mine  body: { name, area, address, phone }
+// The licence and verified status are not editable here.
+const updateMine = async (req, res) => {
+  try {
+    const body = req.body || {};
+    const fields = ['name', 'area', 'address', 'phone'];
+    const missing = fields.filter((field) => !body[field]);
+
+    if (missing.length > 0) {
+      res.status(400).json({ error: 'Missing pharmacy fields: ' + missing.join(', ') });
+      return;
+    }
+
+    const pharmacy = await prisma.pharmacy.findUnique({
+      where: { ownerId: req.session.userId },
+    });
+
+    if (!pharmacy) {
+      res.status(404).json({ error: 'No pharmacy registered' });
+      return;
+    }
+
+    const updated = await prisma.pharmacy.update({
+      where: { id: pharmacy.id },
+      data: {
+        name: body.name,
+        area: body.area,
+        address: body.address,
+        phone: body.phone,
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Could not update the pharmacy' });
+  }
+};
+
 // POST /pharmacies  body: { name, area, address, phone, licenceNumber }  (development only)
 // The public create route starts every pharmacy as PENDING and unowned.
 const createPharmacy = (req, res) => {
@@ -236,5 +275,6 @@ module.exports = {
   getById,
   getMine,
   registerMyPharmacy,
+  updateMine,
   createPharmacy,
 };

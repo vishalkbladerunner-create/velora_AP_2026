@@ -64,7 +64,7 @@ PostgreSQL Database (schema: public)
    - **Success (Creation):** HTTP 201 with newly created resource entity.
    - **Success (Deletion):** HTTP 204 No Content with an empty response body.
    - **Client Errors:** HTTP 400 Bad Request with `{ "error": "<explanation>" }`.
-   - **Authentication / Ownership:** HTTP 401 for a missing session and HTTP 403 for another user’s hold, on `/auth` and `/holds` only.
+   - **Authentication / Role:** HTTP 401 for a missing session (accounts, holds, live search) and HTTP 403 when the session’s account type or ownership does not permit the write. No other route returns 401/403.
    - **Resource Not Found:** HTTP 404 Not Found with `{ "error": "<explanation>" }`.
    - **Server Fault:** HTTP 500 Internal Server Error with `{ "error": "<message>" }`; internal stack traces and Prisma query diagnostics are strictly logged on the server and suppressed from the client.
    - 401/403 are the approved exception; 409, 422 and 429 are still not used.
@@ -90,7 +90,7 @@ The database schema ([`server/prisma/schema.prisma`](../server/prisma/schema.pri
                                                     └─────────────────┘
 ```
 
-A `User` stores an id, name, unique mobile number, bcrypt `passwordHash` and `createdAt`. A `Hold` stores an id, `userId`, `stockItemId`, quantity, status (`ACTIVE`, `CANCELLED` or `EXPIRED`), `expiresAt` and `createdAt`. `User` has many holds and can own one `Pharmacy` through the nullable unique `ownerId`; seeded pharmacies have no owner. `StockItem` has many holds.
+A `User` stores an id, name, unique mobile number, an optional stored address, an `accountType` of `CUSTOMER` or `PHARMACY`, a bcrypt `passwordHash` and `createdAt`. A `Hold` stores an id, `userId`, `stockItemId`, quantity, status (`ACTIVE`, `CANCELLED` or `EXPIRED`), `expiresAt` and `createdAt`. `User` has many holds and can own one `Pharmacy` through the nullable unique `ownerId`; seeded pharmacies have no owner. `StockItem` has many holds.
 
 ### Relational Integrity Rules
 
@@ -102,7 +102,9 @@ A `User` stores an id, name, unique mobile number, bcrypt `passwordHash` and `cr
 6. **Account Identity:** `User.phone` is unique. The password is stored only as a bcrypt hash and is never returned by an endpoint.
 7. **Hold Ownership:** A `Hold` has one `userId` and one `stockItemId`; only the owner may cancel it, and the check returns `403` for anyone else.
 8. **Atomic Stock:** A hold is created inside `$transaction`: `updateMany` decrements only when `quantity >= requested`, so two users cannot reserve the same last strip. Cancelling or expiring the hold increments the row back once.
-9. **Pharmacy Ownership:** `Pharmacy.ownerId` is nullable and unique, so one account owns at most one pharmacy. `POST`/`PUT`/`DELETE /stock` compare the session user with the row’s `ownerId` and return `403` for anyone else.
+9. **Pharmacy Ownership:** `Pharmacy.ownerId` is nullable and unique, so one account owns at most one pharmacy. `POST`/`PUT`/`DELETE /stock` compare the session user with the row’s `ownerId` and return `403` for anyone else, and `PUT /pharmacies/mine` edits only that owner’s row.
+10. **Account Types:** `User.accountType` is set by the server at registration. Medicine writes require a `PHARMACY` account; stock writes require the pharmacy’s owner. A customer receives `403`, so the role boundary survives a direct API call.
+11. **Stored Distance:** `Pharmacy.distanceKm` is a sample value seeded per pharmacy and displayed beside each result. It is deliberately not a GPS, geocoder or haversine computation.
 
 ---
 
@@ -144,6 +146,7 @@ All API endpoints and operational workflows were verified through end-to-end com
 - **t8 · Holds:** 10/10 checks passing. Reserve, list, cross-user `403`, cancel with stock restore, insufficient stock, PENDING stock, expiry restore, and no double restore.
 - **t9 · Pharmacy ownership:** 12/12 checks passing. `GET /pharmacies/mine` is 404 before registration, `POST /pharmacies/mine` creates one VERIFIED pharmacy, a second registration is 400, own stock is 201, another pharmacy and another user get 403, an anonymous write gets 401, and an owner `PUT`/`DELETE` returns 200/204.
 - **t10 · Catalogue page:** 4/4 checks passing. Signup with pharmacy fields creates the account and pharmacy, the page shows only that pharmacy, stock is added in rupees, and the medicine appears in search.
+- **t11 · Account types and editing:** 12/12 checks passing. Customer and pharmacy signups produce the right `accountType`, a customer gets `403` on medicine and stock writes, search requires a session, profile and pharmacy details update, medicine and stock rows edit and delete, and the distance label renders on results and detail.
 
 ---
 
@@ -152,8 +155,8 @@ All API endpoints and operational workflows were verified through end-to-end com
 The following elements remain excluded or deliberately limited:
 
 1. **Local-only sessions and holds:** Accounts use bcrypt and Express MemoryStore sessions; holds use `$transaction` + `updateMany`. Both are the approved exception recorded in `AGENTS.md`. The MemoryStore loses sessions on restart and is not a production store; there is no CSRF token, rate limiting, email verification or password reset.
-2. **No roles, admin workflow or payments:** There is no pharmacist or admin role, no licence-verification workflow, no email/SMS and no payment integration. Catalogue write routes remain development-only. An account can register one pharmacy and change only that pharmacy’s stock; the development build auto-verifies it, while production would keep it PENDING until a real verification workflow exists.
-3. **No Geolocation or Spatial Indexing:** Proximity matching uses textual area containment rather than GPS coordinates, PostGIS, or haversine calculations.
+2. **Two account types, no admin workflow:** Accounts are either `CUSTOMER` or `PHARMACY`, which gates the catalogue and stock writes server-side. There is no administrator role, no licence-verification workflow, no email/SMS and no payment integration. Catalogue write routes remain development-only. An account can register one pharmacy and change only that pharmacy’s stock; the development build auto-verifies it, while production would keep it PENDING until a real verification workflow exists.
+3. **No Geolocation or Spatial Indexing:** Proximity matching uses textual area containment rather than GPS coordinates, PostGIS, or haversine calculations. The distance shown beside each result is a seeded `distanceKm` value stored on the pharmacy for presentation; it is not derived from the user’s address.
 4. **No MongoDB or Polyglot Persistence:** PostgreSQL and Prisma comprise the entire database tier; NoSQL engines are deliberately omitted.
 5. **No Client Frameworks or Heavy Toolchains:** The front-end contains no React, Vue, TypeScript, Tailwind, Webpack, or Babel. It utilizes standard DOM APIs with zero build steps.
 6. **No Cloud Deployment Automation:** The project is configured for local evaluation via Node.js and local PostgreSQL.
@@ -164,7 +167,7 @@ The following elements remain excluded or deliberately limited:
 
 | Member | Branch Responsibilities | Key Deliverables |
 | --- | --- | --- |
-| **Vishal** | Toolchain, Express Skeleton, Search Client, Documentation, Accounts and Holds, Pharmacy Ownership, Development Catalogue | Architecture design, README, basic client, PR review, approved-exception auth/hold build, owner-only stock and catalogue page |
+| **Vishal** | Toolchain, Express Skeleton, Search Client, Documentation, Accounts and Holds, Pharmacy Ownership, Development Catalogue, Account Types and Editing | Architecture design, README, basic client, PR review, approved-exception auth/hold build, owner-only stock, typed accounts, profile/pharmacy/medicine/stock editing, responsive client |
 | **Manav** | Prisma Schema, Migration, Dev Seed, Medicines & Pharmacies APIs | Data model migrations, seed fixtures, t1/t2 test suites |
 | **Yash** | Error Utilities, Course Demos, Viva Presentation | HTTP/FS/Event-Loop demos; presents t4 |
 | **Sayem** | Stock API, Direct pg Demo, Client Detail Wiring, Contract Sweep, Viva & Report | Commits c16–c20: Stock CRUD, pg pool demo, pharmacy detail page, sweep audit, viva script and final report |

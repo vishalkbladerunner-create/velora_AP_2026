@@ -3,74 +3,127 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Velora — Pharmacy Detail</title>
-  <meta name="description" content="View pharmacy stock and details.">
+  <title>Velora — Pharmacy</title>
+  <meta name="description" content="View live stock at a verified pharmacy and reserve medicine for 30 minutes.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230f5a45'/%3E%3Cpath d='M16 8v16M8 16h16' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
   <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="brand" href="/">Velora</a>
-      <p class="tagline">Find a verified pharmacy that has your medicine in stock.</p>
-      <nav class="header-nav"><a href="/">Search</a><a href="/catalogue.html">Catalogue</a><a href="/account.html">Account</a></nav>
+    <div class="shell header-bar">
+      <a class="brand" href="/" aria-label="Velora home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </span>
+        <span class="brand-word">Velora</span>
+      </a>
+      <nav class="main-nav" aria-label="Primary">
+        <a href="/" data-nav>Find medicine</a>
+        <a href="/catalogue.html" data-nav data-pharmacy-only>Catalogue</a>
+        <a href="/account.html" data-nav>Account</a>
+      </nav>
+      <a class="btn btn-ghost btn-small header-action" href="/account.html" data-auth-link>Account</a>
     </div>
   </header>
 
-  <main class="wrap">
-    <div class="page-nav">
-      <a class="back-link" href="/">&larr; Back to search</a>
-    </div>
+  <main id="main" class="shell">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Find medicine</a>
+      <span aria-hidden="true">/</span>
+      <span>Pharmacy</span>
+    </nav>
 
-    <section class="detail-section">
-      <p id="state-message" class="state state-loading" role="status">Loading pharmacy details…</p>
+    <p id="state-message" class="state state-loading" role="status">Loading pharmacy details…</p>
 
-      <article id="pharmacy-detail" class="detail-card" hidden>
-        <header class="detail-header">
+    <article id="pharmacy-detail" hidden>
+      <header class="detail-head">
+        <div class="detail-title">
+          <div class="badge-row">
+            <span class="pill-verified">Verified pharmacy</span>
+            <span class="pill-soft">Live stock</span>
+          </div>
           <h1 id="pharmacy-name"></h1>
-          <p id="pharmacy-meta" class="meta"></p>
-        </header>
+          <p id="pharmacy-meta" class="detail-meta"></p>
+        </div>
+        <a class="btn btn-ghost" href="/">New search</a>
+      </header>
 
-        <section class="detail-info">
-          <h2 class="section-title">Pharmacy Details</h2>
-          <dl class="info-grid">
-            <dt>Area</dt>
-            <dd id="pharmacy-area"></dd>
-            <dt>Address</dt>
-            <dd id="pharmacy-address"></dd>
-            <dt>Phone</dt>
-            <dd id="pharmacy-phone"></dd>
-            <dt>Licence</dt>
-            <dd id="pharmacy-licence"></dd>
-          </dl>
-        </section>
+      <div class="detail-layout">
+        <section class="panel stock-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Stock on the shelf</h2>
+              <p class="muted">Reserve before you leave.</p>
+            </div>
+            <span id="stock-summary" class="count-pill"></span>
+          </div>
 
-        <section class="stock-section">
-          <h2 class="section-title">Current Stock</h2>
-          <p id="stock-empty" class="hint" hidden>No stock records available for this pharmacy.</p>
           <div class="table-wrap">
             <table id="stock-table" class="stock-table">
               <thead>
-                <tr>
-                  <th scope="col">Medicine</th>
-                  <th scope="col">Form</th>
-                  <th scope="col">Quantity</th>
-                  <th scope="col">Price</th>
-                  <th scope="col">Reserve</th>
-                </tr>
+                <tr><th scope="col">Medicine</th><th scope="col">Form</th><th scope="col">Available</th><th scope="col">Price</th><th scope="col">Reserve</th></tr>
               </thead>
               <tbody id="stock-rows"></tbody>
             </table>
           </div>
-          <p id="reserve-message" class="state" role="status" hidden></p>
+
+          <p id="stock-empty" class="state state-empty" hidden>No stock records for this pharmacy.</p>
         </section>
-      </article>
-    </section>
+
+        <aside class="detail-side">
+          <section class="panel hold-card">
+            <h2>Pick up in 30 minutes</h2>
+            <p>Reserve your quantity now and collect it before the hold expires.</p>
+            <ol class="steps">
+              <li><span>1</span> Reserve the quantity you need.</li>
+              <li><span>2</span> Go to the pharmacy.</li>
+              <li><span>3</span> Show the phone number on your account.</li>
+            </ol>
+            <a id="account-link" class="btn btn-primary btn-block" href="/account.html">Log in to reserve</a>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head"><div><h2>Pharmacy details</h2><p class="muted">Licence and contact.</p></div></div>
+            <dl class="detail-list">
+              <dt>Area</dt><dd id="pharmacy-area"></dd>
+              <dt>Address</dt><dd id="pharmacy-address"></dd>
+              <dt>Distance</dt><dd id="pharmacy-distance"></dd>
+              <dt>Phone</dt><dd><a id="pharmacy-phone-link" href="#"><span id="pharmacy-phone"></span></a></dd>
+              <dt>Licence</dt><dd id="pharmacy-licence"></dd>
+            </dl>
+          </section>
+        </aside>
+      </div>
+    </article>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap">Velora · development build · search, accounts and 30-minute holds.</div>
+    <div class="shell footer-inner">
+      <p><strong>Velora</strong> · Verified medicine, held for you.</p>
+      <nav><a href="/">Search</a><a href="/catalogue.html" data-pharmacy-only>Catalogue</a><a href="/account.html">Account</a></nav>
+      <p class="footer-note">Development build · Sonipat, Haryana</p>
+    </div>
   </footer>
 
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <a href="/" data-nav>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Search
+    </a>
+    <a href="/catalogue.html" data-nav data-pharmacy-only>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg>
+      Catalogue
+    </a>
+    <a href="/account.html" data-nav>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c.7-3.3 3.4-5 7-5s6.3 1.7 7 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      Account
+    </a>
+  </nav>
+
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="false"></div>
+  <script src="/ui.js"></script>
   <script src="/pharmacy.js"></script>
 </body>
 </html>

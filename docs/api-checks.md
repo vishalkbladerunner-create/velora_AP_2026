@@ -3,7 +3,9 @@
 Manual checks run with `curl` against a local PostgreSQL filled by
 `node prisma/dev-seed.js`. Success returns the bare resource; failure returns
 `{ "error": "..." }`. Allowed codes: 200, 201, 204, 400, 401, 403, 404, 500.
-401 and 403 are used only by `/auth`, `/holds`, `/stock` and `/pharmacies/mine`.
+401 and 403 are used only by `/auth`, `/holds`, the authenticated search (`/pharmacies`), the medicine writes and the owner-only pharmacy and stock writes.
+
+The fixture set was expanded on 2026-11-20 to 18 medicines, 6 pharmacies and 31 stock rows. Sections recorded before that date keep the counts that were in force when they were run; the “Fixture refresh” section below states the current numbers.
 
 ## Route index
 
@@ -13,13 +15,13 @@ Manual checks run with `curl` against a local PostgreSQL filled by
 | GET | `/medicines` | none | 200 | 200 | Medicines section, row 1 |
 | GET | `/medicines?name=dolo` | query string | 200 | 200 | Medicines section, row 2 |
 | GET | `/medicines/:id` | seeded id | 200 | 200 | Medicines section, row 4 |
-| POST | `/medicines` | `{"name":"...","form":"..."}` | 201 | 201 | Medicines section, row 7 |
-| PUT | `/medicines/:id` | `{"name":"...","form":"..."}` | 200 | 200 | Medicines section, row 8 |
-| DELETE | `/medicines/:id` | unstocked id | 204 | 204 | Medicines section, row 9 |
-| GET | `/pharmacies` | none | 200 | 200 | Pharmacies section, row 1 |
-| GET | `/pharmacies?area=model town` | query string | 200 | 200 | Pharmacies section, row 2 |
-| GET | `/pharmacies?medicine=dolo` | query string | 200 | 200 | Pharmacies section, row 3 |
-| GET | `/pharmacies?medicine=dolo&area=sector 14` | query string | 200 | 200 | Pharmacies section, row 4 |
+| POST | `/medicines` | owner session + `{"name":"...","form":"..."}` | 201 | 201 | Medicines section, row 7; 403 for a customer (Account types, row 6) |
+| PUT | `/medicines/:id` | owner session + body | 200 | 200 | Medicines section, row 8 |
+| DELETE | `/medicines/:id` | owner session + unstocked id | 204 | 204 | Medicines section, row 9 |
+| GET | `/pharmacies` | session cookie | 200 | 200 | Pharmacies section, row 1; 401 without a cookie (Account types, row 4) |
+| GET | `/pharmacies?area=model town` | query string + cookie | 200 | 200 | Pharmacies section, row 2 |
+| GET | `/pharmacies?medicine=dolo` | query string + cookie | 200 | 200 | Pharmacies section, row 3 |
+| GET | `/pharmacies?medicine=dolo&area=sector 14` | query string + cookie | 200 | 200 | Pharmacies section, row 4 |
 | GET | `/pharmacies/:id` | verified id | 200 | 200 | Pharmacies section, row 6 |
 | POST | `/pharmacies` | full body | 201 | 201 | Pharmacies section, row 10 |
 | GET | `/stock?pharmacyId=1` | seeded id | 200 | 200 | Stock section, row 1 |
@@ -27,11 +29,13 @@ Manual checks run with `curl` against a local PostgreSQL filled by
 | PUT | `/stock/:id` | owner session | 200 | 200 | Pharmacy ownership, success note |
 | DELETE | `/stock/:id` | owner session | 204 | 204 | Pharmacy ownership, success note |
 | GET | `/pharmacies/mine` | session cookie | 200 | 200 | Pharmacy ownership, row 4 |
-| POST | `/pharmacies/mine` | full body + session | 201 | 201 | Pharmacy ownership, row 4 |
-| POST | `/auth/register` | name + phone + password | 201 | 201 | Accounts section, row 2 |
+| POST | `/pharmacies/mine` | full body + owner session | 201 | 201 | Pharmacy ownership, row 4 |
+| PUT | `/pharmacies/mine` | full body + owner session | 200 | 200 | Account types and editing, row 10 |
+| POST | `/auth/register` | name + phone + address + password | 201 | 201 | Accounts section, row 2 |
 | POST | `/auth/login` | phone + password | 200 | 200 | Accounts section, row 5 |
 | POST | `/auth/logout` | session cookie | 204 | 204 | Accounts section, row 8 |
 | GET | `/auth/me` | session cookie | 200 | 200 | Accounts section, row 7 |
+| PUT | `/auth/me` | session cookie + profile body | 200 | 200 | Account types and editing, row 11 |
 | GET | `/holds` | session cookie | 200 | 200 | Holds section, row 3 |
 | POST | `/holds` | stockItemId + quantity | 201 | 201 | Holds section, row 2 |
 | DELETE | `/holds/:id` | own active hold | 204 | 204 | Holds section, row 6 |
@@ -204,3 +208,37 @@ Run on 2026-11-20 by Vishal in headless Chrome against the live local database.
 | 4 | Add 3 units of Dolo 650 in rupees | 201 | the page shows “Stock added”, the stock table gains a row, and the medicine appears in search |
 
 The page sends `pharmacyId` from `/pharmacies/mine`, so it cannot be pointed at another pharmacy; the API returns `403` if it is (ownership row 7/8). The earlier `/catalogue/pharmacies` fixture was removed.
+
+## Fixture refresh (2026-11-20)
+
+The development fixtures now hold **18 medicines, 6 pharmacies (4 VERIFIED, 2 PENDING) and 31 stock rows**. Every pharmacy carries a seeded `distanceKm` value (1.2, 2.4, 3.6, 4.8, 5.3, 6.1) that the client shows beside a result; it is stored sample data, not a GPS or haversine measurement.
+
+A fresh authenticated `GET /pharmacies?medicine=dolo` returns four verified pharmacies, cheapest first: City Care Pharmacy ₹31.00 (2.4 km), Kundli Health Store ₹31.50 (4.8 km), Sanjeevani Medicos ₹32.00 (1.2 km), Highway 24x7 Chemist ₹33.00 (3.6 km). The two PENDING pharmacies and the zero-quantity rows stay hidden.
+
+## Account types, address and editing (test t11)
+
+Run on 2026-11-20 by Vishal against the live local database, `NODE_ENV=development`, fixture set 18/6/31. A customer (`Tara`, 9333333333) and a pharmacy account (`Om`, 9444444444) were registered, then removed with their pharmacy and temporary medicine.
+
+| # | Method | Request | Expected | Actual | Body / note |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `POST` | `/auth/register` customer without `address` | 400 | 400 | `{"error":"Provide a name, a 10-digit mobile number, an address, a password of 8 to 72 characters, and a valid account type"}` |
+| 2 | `POST` | `/auth/register` customer with address | 201 | 201 | `accountType: CUSTOMER`, `address` echoed, no `passwordHash` |
+| 3 | `POST` | `/auth/register` pharmacy account with address | 201 | 201 | `accountType: PHARMACY`; a session is started |
+| 4 | `GET` | `/pharmacies?medicine=dolo` with no cookie | 401 | 401 | `{"error":"Authentication required"}`: live search is account-only |
+| 5 | `GET` | `/pharmacies?medicine=dolo` as the customer | 200 | 200 | 4 verified pharmacies, cheapest first, each with `distanceKm`; no `ownerId` |
+| 6 | `POST` | `/medicines` as the customer | 403 | 403 | `{"error":"Pharmacy owners only"}` |
+| 7 | `POST` | `/stock` as the customer | 403 | 403 | `{"error":"Pharmacy owners only"}` |
+| 8 | `GET` | `/pharmacies/mine` as the customer | 403 | 403 | `{"error":"Pharmacy owners only"}` |
+| 9 | `POST` | `/pharmacies/mine` as the owner | 201 | 201 | `status: VERIFIED`, `distanceKm: 2.5`, `ownerId` set |
+| 10 | `PUT` | `/pharmacies/mine` as the owner | 200 | 200 | name, area, address and phone changed; `status` and `licenceNumber` unchanged |
+| 11 | `PUT` | `/auth/me` as the customer | 200 | 200 | name and address changed; `accountType` and `phone` unchanged; no hash |
+| 12 | `POST` | `/medicines` as the owner | 201 | 201 | `{"id":24,"name":"Temp Med","form":"TABLET"}` |
+| 13 | `PUT` | `/medicines/24` as the owner | 200 | 200 | renamed to `Temp Med 10`, form `CAPSULE` |
+| 14 | `DELETE` | `/medicines/24` as the customer | 403 | 403 | `{"error":"Pharmacy owners only"}` |
+| 15 | `POST` | `/stock` for the owner’s pharmacy, medicine 24 | 201 | 201 | stock row 41, quantity 9, ₹42.00 |
+| 16 | `PUT` | `/stock/41` as the owner | 200 | 200 | quantity 12, ₹45.00; `updatedAt` moved forward |
+| 17 | `PUT` | `/stock/41` as the customer | 403 | 403 | `{"error":"Pharmacy owners only"}` |
+| 18 | `DELETE` | `/stock/41` as the owner | 204 | 204 | empty body |
+| 19 | `DELETE` | `/medicines/24` as the owner | 204 | 204 | allowed once the stock row was gone |
+
+Cleanup left the database at 6 pharmacies, 18 medicines, 31 stock rows, 1 account and 0 holds. The distance label was also checked in headless Chrome on `/` and `/pharmacy.html?id=2` (`2.4 km`); the steppers render at `0` and the Reserve button stays disabled until the quantity reaches 1.

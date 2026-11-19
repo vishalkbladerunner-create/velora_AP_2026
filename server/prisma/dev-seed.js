@@ -59,6 +59,7 @@ async function seedPharmacies() {
           phone: pharmacy.phone,
           licenceNumber: pharmacy.licenceNumber,
           status: pharmacy.status,
+          distanceKm: pharmacy.distanceKm || 2.5,
         },
       });
       created = created + 1;

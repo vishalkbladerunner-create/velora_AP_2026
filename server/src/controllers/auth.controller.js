@@ -8,6 +8,8 @@ function publicUser(user) {
     id: user.id,
     name: user.name,
     phone: user.phone,
+    address: user.address,
+    accountType: user.accountType,
     createdAt: user.createdAt,
   };
 }
@@ -18,12 +20,15 @@ const register = async (req, res) => {
     const body = req.body || {};
     const name = typeof body.name === 'string' ? body.name.trim() : '';
     const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+    const address = typeof body.address === 'string' ? body.address.trim() : '';
     const password = typeof body.password === 'string' ? body.password : '';
+    const requestedType = body.accountType === undefined ? 'CUSTOMER' : String(body.accountType);
 
-    if (name.length < 2 || !PHONE_PATTERN.test(phone) ||
-        password.length < 8 || password.length > 72) {
+    if (name.length < 2 || !PHONE_PATTERN.test(phone) || address.length < 5 ||
+        password.length < 8 || password.length > 72 ||
+        (requestedType !== 'CUSTOMER' && requestedType !== 'PHARMACY')) {
       res.status(400).json({
-        error: 'Provide a name, a 10-digit mobile number, and a password of 8 to 72 characters',
+        error: 'Provide a name, a 10-digit mobile number, an address, a password of 8 to 72 characters, and a valid account type',
       });
       return;
     }
@@ -40,12 +45,15 @@ const register = async (req, res) => {
       data: {
         name: name,
         phone: phone,
+        address: address,
         passwordHash: passwordHash,
+        accountType: requestedType,
       },
-      select: { id: true, name: true, phone: true, createdAt: true },
+      select: { id: true, name: true, phone: true, address: true, accountType: true, createdAt: true },
     });
 
     req.session.userId = user.id;
+    req.session.accountType = user.accountType;
     res.status(201).json(user);
   } catch (error) {
     console.error(error);
@@ -80,6 +88,7 @@ const login = async (req, res) => {
     }
 
     req.session.userId = user.id;
+    req.session.accountType = user.accountType;
     res.json(publicUser(user));
   } catch (error) {
     console.error(error);
@@ -111,7 +120,7 @@ const me = async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { id: req.session.userId },
-      select: { id: true, name: true, phone: true, createdAt: true },
+      select: { id: true, name: true, phone: true, address: true, accountType: true, createdAt: true },
     });
 
     if (!user) {
@@ -127,9 +136,43 @@ const me = async (req, res) => {
   }
 };
 
+// PUT /auth/me
+const updateMe = async (req, res) => {
+  try {
+    const body = req.body || {};
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+    const address = typeof body.address === 'string' ? body.address.trim() : '';
+
+    if (name.length < 2 || !PHONE_PATTERN.test(phone) || address.length < 5) {
+      res.status(400).json({ error: 'Provide a name, a 10-digit mobile number and an address' });
+      return;
+    }
+
+    const existing = await prisma.user.findUnique({ where: { phone: phone } });
+
+    if (existing && existing.id !== req.session.userId) {
+      res.status(400).json({ error: 'Phone number already registered' });
+      return;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.session.userId },
+      data: { name: name, phone: phone, address: address },
+      select: { id: true, name: true, phone: true, address: true, accountType: true, createdAt: true },
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Could not update the account' });
+  }
+};
+
 module.exports = {
   register,
   login,
   logout,
   me,
+  updateMe,
 };

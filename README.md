@@ -21,7 +21,9 @@
 
 When someone needs a medicine urgently, typically late at night, in an unfamiliar area or for a prescription that is hard to find, the usual approach is to phone or visit pharmacies one at a time. Velora replaces that with one search: type a medicine name and get back only **verified** pharmacies that currently hold it **with stock above zero**, each listed with the matching items, quantities and prices.
 
-Velora is the CSA213 Advanced Programming capstone at Rishihood University. It is a REST API built with **Node.js, Express 5, Prisma ORM and PostgreSQL**, plus a static client served by the same process. The scope stays within the course lectures (L1–L12) except for one approved exception: patient accounts and 30-minute stock holds, recorded in `AGENTS.md`. Everything else remains a small, complete and manually verified core rather than a broad one.
+Velora is the CSA213 Advanced Programming capstone at Rishihood University. It is a REST API built with **Node.js, Express 5, Prisma ORM and PostgreSQL**, plus a static client served by the same process. The scope stays within the course lectures (L1–L12) except for one approved exception: accounts, 30-minute stock holds and the role gates that protect them, recorded in `AGENTS.md`. Everything else remains a small, complete and manually verified core rather than a broad one.
+
+Two account types share the same system. A **customer** searches, reserves stock and keeps a profile. A **pharmacy owner** also registers one pharmacy and maintains the shared medicine catalogue and that pharmacy’s stock. The type is stored on the account and checked by the API, so the interface is not what keeps the two apart.
 
 | Capability | Status |
 | --- | --- |
@@ -38,7 +40,11 @@ Velora is the CSA213 Advanced Programming capstone at Rishihood University. It i
 | Patient accounts: register, login, logout, session cookie | Done (approved exception) |
 | 30-minute stock holds: reserve, list, cancel, expiry restore | Done (approved exception) |
 | Pharmacy registration at account creation; one pharmacy per account | Done (development tool) |
-| Development catalogue page: add medicines and manage your own pharmacy's stock | Done (development tool) |
+| Development catalogue page: add, edit and delete medicines; manage your own pharmacy's stock | Done (development tool) |
+| Typed accounts: customer and pharmacy owner, enforced by middleware | Done (approved exception) |
+| Profile editing: name, mobile number and address | Done |
+| Pharmacy details editing: name, area, address and phone | Done |
+| Seeded distance on each pharmacy, shown beside search results | Done (sample data) |
 | Contract sweep over every route, viva script and report | Done (P3) |
 
 ---
@@ -93,7 +99,8 @@ sequenceDiagram
     participant P as Prisma Client
     participant D as PostgreSQL
 
-    U->>A: GET /pharmacies?medicine=dolo&area=Sector 14
+    U->>A: GET /pharmacies?medicine=dolo&area=Sector 14  (Cookie: connect.sid=…)
+    A->>A: requireAuth — no session → 401 { error }
     A->>C: getAll(req, res)
     C->>P: medicine.findMany(name contains "dolo", case-insensitive)
     P->>D: SELECT … FROM "Medicine" WHERE name ILIKE '%dolo%'
@@ -137,6 +144,7 @@ erDiagram
         string phone
         string licenceNumber UK
         string status "PENDING (default) or VERIFIED"
+        float distanceKm "sample distance"
         int ownerId FK "unique, nullable"
     }
     STOCKITEM {
@@ -152,6 +160,8 @@ erDiagram
         int id PK
         string name
         string phone UK
+        string address
+        string accountType "CUSTOMER or PHARMACY"
         string passwordHash "bcrypt only"
         datetime createdAt
     }
@@ -181,6 +191,10 @@ erDiagram
 | A hold belongs to one user and one stock row | Foreign keys on `Hold`; the owner is checked before a cancel |
 | A hold never overdraws stock | `$transaction` + `updateMany` checks `quantity >= requested` before the decrement |
 | Expired stock returns to the shelf | The next hold request marks due holds `EXPIRED` and increments the stock row once |
+| Accounts are typed | `User.accountType` is `CUSTOMER` or `PHARMACY`; the server sets it at registration, and pharmacy-only routes return `403` for a customer |
+| Every account stores an address | Required at registration and editable through `PUT /auth/me` |
+| Only the owner edits the pharmacy | `PUT /pharmacies/mine` changes name, area, address and phone; the licence number and verified status stay server-owned |
+| Distance is stored, not calculated | `Pharmacy.distanceKm` holds a sample distance per pharmacy; it labels results but is not a GPS or haversine measurement |
 
 The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma). The generated SQL is committed under [`server/prisma/migrations/`](server/prisma/migrations/), so every environment builds the identical structure.
 
@@ -199,11 +213,11 @@ The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma)
 | Resource deleted | `204` | Empty |
 | Invalid input (bad id, missing field, duplicate, blocked delete) | `400` | `{ "error": "…" }` |
 | Missing or invalid session | `401` | `{ "error": "Authentication required" }` |
-| A hold owned by another user | `403` | `{ "error": "Not allowed to change this hold" }` |
+| Wrong role or another user's record | `403` | `{ "error": "…" }` |
 | Unknown id or route | `404` | `{ "error": "…" }` |
 | Unexpected failure (logged server-side) | `500` | `{ "error": "…" }`, never a stack trace |
 
-`401` and `403` are used only by `/auth` and `/holds` (approved exception). `409`, `422` and `429` are still not used.
+`401` and `403` are used by `/auth`, `/holds`, the authenticated search, medicine writes and the owner-only pharmacy and stock writes. That set is the approved exception; `409`, `422` and `429` are still not used.
 
 ### Endpoints
 
@@ -213,13 +227,13 @@ The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma)
 | `GET` | `/medicines` | All medicines, sorted by name | 200 |
 | `GET` | `/medicines?name=` | Case-insensitive substring filter | 200 |
 | `GET` | `/medicines/:id` | One medicine | 200, 400, 404 |
-| `POST` | `/medicines` | Create `{ name, form }` · *development only* | 201, 400 |
-| `PUT` | `/medicines/:id` | Replace `name` and `form` · *development only* | 200, 400, 404 |
-| `DELETE` | `/medicines/:id` | Delete; refused while stocked · *development only* | 204, 400, 404 |
-| `GET` | `/pharmacies` | Verified pharmacies with full stock and medicine | 200 |
-| `GET` | `/pharmacies?area=` | Same, filtered by area (case-insensitive exact match) | 200 |
-| `GET` | `/pharmacies?medicine=` | Search: verified pharmacies with a matching in-stock item | 200 |
-| `GET` | `/pharmacies?medicine=&area=` | Search narrowed to one area | 200 |
+| `POST` | `/medicines` | Create `{ name, form }` · *development only, pharmacy owner* | 201, 400, 401, 403 |
+| `PUT` | `/medicines/:id` | Replace `name` and `form` · *development only, pharmacy owner* | 200, 400, 401, 403, 404 |
+| `DELETE` | `/medicines/:id` | Delete; refused while stocked · *development only, pharmacy owner* | 204, 400, 401, 403, 404 |
+| `GET` | `/pharmacies` | Verified pharmacies with full stock and medicine · *session required* | 200, 401 |
+| `GET` | `/pharmacies?area=` | Same, filtered by area (case-insensitive exact match) | 200, 401 |
+| `GET` | `/pharmacies?medicine=` | Search: verified pharmacies with a matching in-stock item | 200, 401 |
+| `GET` | `/pharmacies?medicine=&area=` | Search narrowed to one area | 200, 401 |
 | `GET` | `/pharmacies/:id` | One verified pharmacy with all its stock and each medicine | 200, 400, 404 |
 | `POST` | `/pharmacies` | Create; the server sets `status` · *development only* | 201, 400 |
 | `GET` | `/stock?pharmacyId=` | Stock items for one verified pharmacy with medicine | 200, 400 |
@@ -228,20 +242,26 @@ The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma)
 | `DELETE` | `/stock/:id` | Delete your own stock row · *development only* | 204, 400, 401, 403, 404 |
 | `GET` | `/pharmacies/mine` | The pharmacy registered to the signed-in account | 200, 401, 404 |
 | `POST` | `/pharmacies/mine` | Register one pharmacy for the signed-in account | 201, 400, 401 |
-| `POST` | `/auth/register` | Create `{ name, phone, password }` and start a session | 201, 400 |
+| `PUT` | `/pharmacies/mine` | Update your pharmacy’s name, area, address and phone | 200, 400, 401, 404 |
+| `POST` | `/auth/register` | Create `{ name, phone, address, password, accountType }` and start a session | 201, 400 |
 | `POST` | `/auth/login` | Log in with `{ phone, password }` | 200, 401 |
 | `POST` | `/auth/logout` | Destroy the current session | 204 |
 | `GET` | `/auth/me` | Current account | 200, 401 |
+| `PUT` | `/auth/me` | Update your name, mobile number and address | 200, 400, 401 |
 | `GET` | `/holds` | Current user’s holds, newest first | 200, 401 |
 | `POST` | `/holds` | Reserve `{ stockItemId, quantity }` for 30 minutes | 201, 400, 401, 404 |
 | `DELETE` | `/holds/:id` | Cancel the caller’s active hold and restore stock | 204, 400, 401, 403, 404 |
 
 > **Development-only writes.** The medicine, pharmacy and stock write routes are
 > not registered when `NODE_ENV=production`. Accounts, holds and
-> `POST /pharmacies/mine` are separate: they are always mounted, but the session
-> store is Express’s in-memory store, so the current build is still local-only
-> and must not be exposed publicly. Stock writes additionally require the
-> signed-in owner of that pharmacy; another user gets `403`.
+> `POST`/`PUT /pharmacies/mine` are separate: they are always mounted, but the
+> session store is Express’s in-memory store, so the current build is still
+> local-only and must not be exposed publicly.
+>
+> **Role gates.** Registration stores `accountType` (`CUSTOMER` or `PHARMACY`)
+> and the server enforces it: a customer gets `403` on medicine and stock
+> writes, and only the owner of a pharmacy can change its stock. Hiding the
+> catalogue link in the client is presentation, not the security boundary.
 
 ### Examples
 
@@ -251,6 +271,7 @@ The schema lives in [`server/prisma/schema.prisma`](server/prisma/schema.prisma)
 ```http
 GET /pharmacies?medicine=dolo HTTP/1.1
 Host: localhost:3000
+Cookie: connect.sid=…
 ```
 
 ```json
@@ -263,6 +284,7 @@ Host: localhost:3000
     "phone": "9000000102",
     "licenceNumber": "HR-SNP-DEMO-0102",
     "status": "VERIFIED",
+    "distanceKm": 2.4,
     "stock": [
       {
         "id": 6,
@@ -279,7 +301,7 @@ Host: localhost:3000
 ]
 ```
 
-Each pharmacy carries **only** the stock rows that matched the search. A `PENDING` pharmacy, or a row with `quantity: 0`, never appears. Results are ordered by the price of the cheapest matching item.
+Each pharmacy carries **only** the stock rows that matched the search. A `PENDING` pharmacy, or a row with `quantity: 0`, never appears. Results are ordered by the price of the cheapest matching item. `distanceKm` is the seeded sample distance for that pharmacy. The request needs a session: without one the route returns `401 {"error":"Authentication required"}`.
 </details>
 
 <details>
@@ -355,7 +377,7 @@ A missing key stops boot with one line: `Missing environment variables: DATABASE
 
 ```bash
 npx prisma migrate dev          # creates the database if needed and applies migrations
-node prisma/dev-seed.js         # 12 medicines, 6 pharmacies, 20 stock rows
+node prisma/dev-seed.js         # 18 medicines, 6 pharmacies, 31 stock rows
 ```
 
 ### 4 · Run
@@ -365,19 +387,17 @@ npm run dev                     # nodemon, restarts on save
 npm start                       # plain node
 ```
 
-Open **http://localhost:3000** and search for `dolo`, or call the API directly:
+Open **http://localhost:3000** and sign in — live search and reservations are
+account-only. The API behaves the same way:
 
 ```bash
 curl http://localhost:3000/health
-curl "http://localhost:3000/pharmacies?medicine=dolo&area=sector%2014"
-```
 
-Create an account and reserve one strip:
-
-```bash
 curl -c jar -X POST http://localhost:3000/auth/register \
   -H 'Content-Type: application/json' \
-  -d '{"name":"Asha","phone":"9000000001","password":"password123"}'
+  -d '{"name":"Asha","phone":"9000000001","address":"12 Model Town, Sonipat","password":"password123","accountType":"CUSTOMER"}'
+
+curl -b jar "http://localhost:3000/pharmacies?medicine=dolo&area=sector%2014"
 
 curl -b jar -X POST http://localhost:3000/holds \
   -H 'Content-Type: application/json' \
@@ -388,11 +408,13 @@ Open **http://localhost:3000/account.html** to see the hold, or **/pharmacy.html
 
 ## Catalogue page (development only)
 
-Open **http://localhost:3000/catalogue.html** to add medicines and manage the stock of the pharmacy registered to your account.
+Open **http://localhost:3000/catalogue.html** to manage the pharmacy registered to your account. The page is available to **pharmacy** accounts; a customer sees an owner-only notice and the API returns `403` for the same writes.
 
-- Register a pharmacy in the optional section of the account form, or later from `/account.html`. One account owns at most one pharmacy (`GET`/`POST /pharmacies/mine`).
-- The catalogue shows only **your** pharmacy. `POST /stock` checks the signed-in owner; adding stock to another pharmacy returns `403`.
-- Adding a medicine updates the shared medicine list and the stock dropdown immediately.
+- Register a pharmacy in the account form, or later from `/account.html`. One account owns at most one pharmacy (`GET`/`POST /pharmacies/mine`).
+- The catalogue shows only **your** pharmacy. `POST`/`PUT`/`DELETE /stock` check the signed-in owner; another pharmacy returns `403`.
+- Medicines are shared catalogue data: a pharmacy owner can add, rename and delete them. Deleting a medicine is refused while any pharmacy still stocks it.
+- Stock rows can be added, edited (quantity and price) and deleted from the same page, with a confirmation step before a delete.
+- The pharmacy’s own details — name, area, address and phone — are edited from `/account.html`.
 - Stock is entered in rupees and converted to integer paise before the request.
 - These write routes do not exist when `NODE_ENV=production`. The development build auto-verifies a newly registered pharmacy so it can be stocked and searched; production would need a real verification workflow.
 
@@ -416,7 +438,7 @@ node prisma/dev-seed.js            # everything
 node prisma/dev-seed.js stock      # one table
 ```
 
-The fixtures model a realistic case in Sonipat, Haryana: four verified pharmacies, two pending ones, and deliberate edge cases (zero-quantity rows, and a pending pharmacy holding stock) so that the search filters are visible in the results.
+The fixtures model a realistic case in Sonipat, Haryana: 18 medicines, six pharmacies (four verified, two pending) and 31 stock rows, including deliberate edge cases — a zero-quantity row and pending pharmacies holding stock — so that the search filters are visible in the results. Each pharmacy also carries a sample `distanceKm` value that the client displays next to the result.
 
 ---
 
@@ -471,7 +493,9 @@ The fixtures model a realistic case in Sonipat, Haryana: four verified pharmacie
 | **Holds are transactional** | `updateMany` with `quantity >= requested` plus `$transaction` prevents two users from reserving the last strip. |
 | **Bcrypt hash only** | The password is hashed before insert; every response uses `select` so the hash never leaves the server. |
 | **Lazy expiry** | Due holds are expired on the next `/holds` request and the stock is restored once, guarded by the status update. |
-| **Uniform response contract** | Bare resource on success, `{ error }` on failure; 401/403 appear only on auth/hold routes, which keeps the client's error handling trivial. |
+| **Uniform response contract** | Bare resource on success, `{ error }` on failure; 401/403 appear only where a session or a role is required, which keeps the client's error handling trivial. |
+| **Account type is server-owned** | `accountType` is written once at registration and checked by middleware, so the UI cannot grant pharmacy powers by hiding or unhiding a link. |
+| **Distance is a stored value** | `distanceKm` demonstrates the “nearest pharmacy” presentation without pretending to do geolocation: no GPS, maps SDK or haversine maths is involved. |
 | **Fail-fast configuration** | A misconfigured environment stops at boot with one clear message instead of failing on the first query. |
 
 ---
@@ -482,7 +506,7 @@ Every endpoint is exercised with `curl` against a seeded database, and the resul
 
 - `node --check` passes on every new file, and `npm run dev` boots;
 - every acceptance check in the commit's playbook passes and is recorded;
-- responses follow the contract above (200, 201, 204, 400, 401, 403, 404 and 500; 401/403 only on auth/hold routes);
+- responses follow the contract above (200, 201, 204, 400, 401, 403, 404 and 500; 401/403 only where a session or role is required);
 - no secrets are committed, and `.env.example` is kept current;
 - the commit is read by a ring partner before it lands.
 
@@ -496,6 +520,7 @@ Every endpoint is exercised with `curl` against a seeded database, and the resul
 | t8 · Holds | Vishal | reserve, list, cross-user 403, cancel, insufficient stock, PENDING stock, expiry restore | 10 / 10 pass |
 | t9 · Pharmacy ownership | Vishal | register mine, duplicate 400, own stock 201, other pharmacy 403, other user 403, anon 401 | 12 / 12 pass |
 | t10 · Catalogue page | Vishal | signup with pharmacy, own stock, search hit | 4 / 4 pass |
+| t11 · Account types & editing | Vishal | customer vs pharmacy signup, role 403s, profile, pharmacy, medicine and stock edits, address and distance | 12 / 12 pass |
 
 ---
 
@@ -515,7 +540,7 @@ The API cannot naturally show every lecture, so small, independent programs do. 
 
 ## Scope and non-goals
 
-One exception is approved and recorded in `AGENTS.md`: patient accounts and 30-minute stock holds (bcrypt, express-session, 401/403, Prisma `updateMany` + `$transaction`). Everything else stays within L1–L12. Still out of scope: pharmacist/admin roles, email verification or password reset, email/SMS, payments, MongoDB, a React client, geolocation and distance sorting, and cloud deployment.
+One exception is approved and recorded in `AGENTS.md`: patient accounts and 30-minute stock holds (bcrypt, express-session, 401/403, Prisma `updateMany` + `$transaction`). Everything else stays within L1–L12. Still out of scope: admin roles and a licence-verification workflow, email verification or password reset, email/SMS, payments, MongoDB, a React client, GPS geolocation, maps, haversine distance calculation and cloud deployment. The distance shown in the client is a seeded sample value stored on each pharmacy.
 
 The catalogue page is a development tool, not a staff role. Stock writes are owner-only: an account can register one pharmacy and change only that pharmacy’s stock. The development build auto-verifies a newly registered pharmacy; production would need a real licence-verification workflow.
 
