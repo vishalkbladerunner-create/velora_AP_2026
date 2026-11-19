@@ -190,7 +190,7 @@ No other status codes are used.
 | `GET` | `/pharmacies?medicine=&area=` | Search narrowed to one area | 200 |
 | `GET` | `/pharmacies/:id` | One verified pharmacy with all its stock and each medicine | 200, 400, 404 |
 | `POST` | `/pharmacies` | Create; the server sets `status` · *development only* | 201, 400 |
-| `GET` | `/stock?pharmacyId=` | Stock items for one pharmacy with medicine | 200, 400 |
+| `GET` | `/stock?pharmacyId=` | Stock items for one verified pharmacy with medicine | 200, 400 |
 | `POST` | `/stock` | Create `{ pharmacyId, medicineId, quantity, pricePaise }` · *development only* | 201, 400, 404 |
 | `PUT` | `/stock/:id` | Replace `quantity` and `pricePaise` · *development only* | 200, 400, 404 |
 | `DELETE` | `/stock/:id` | Delete stock row · *development only* | 204, 400, 404 |
@@ -418,7 +418,7 @@ Every endpoint is exercised with `curl` against a seeded database, and the resul
 | t1 · Medicines read | Manav | list, filter, 400 / 404, create / replace / delete | 10 / 10 pass |
 | t2 · Pharmacies read | Manav | verified-only list and detail, area, medicine search, server-owned status, array query | 13 / 13 pass |
 | t3 · Stock write | Sayem | list by pharmacy, add, update, delete, 400 / 404 | 11 / 11 pass |
-| t4 · Envelope and codes | Yash | status codes (200, 201, 204, 400, 404, 500), error envelope, terminal 404 | 8 / 8 pass |
+| t4 · Envelope and codes | Sayem (Yash presents) | status codes (200, 201, 204, 400, 404, 500), error envelope, terminal 404 | 8 / 8 pass |
 
 ---
 

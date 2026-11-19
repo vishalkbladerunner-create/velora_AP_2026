@@ -152,9 +152,9 @@ In accordance with capstone specifications and to maintain strict fidelity to th
 | --- | --- | --- |
 | **Vishal** | Toolchain, Express Skeleton, Search Client, Documentation | Architecture design, README, basic client, PR review |
 | **Manav** | Prisma Schema, Migration, Dev Seed, Medicines & Pharmacies APIs | Data model migrations, seed fixtures, t1/t2 test suites |
-| **Yash** | Error Utilities, Course Demos, Envelope Verification | HTTP/FS/Event-Loop demos, t4 contract envelope checks |
+| **Yash** | Error Utilities, Course Demos, Viva Presentation | HTTP/FS/Event-Loop demos; presents t4 |
 | **Sayem** | Stock API, Direct pg Demo, Client Detail Wiring, Contract Sweep, Viva & Report | Commits c16–c20: Stock CRUD, pg pool demo, pharmacy detail page, sweep audit, viva script and final report |
 
 ---
 
-*Report finalized on 12 November 2026 for CSA213 Advanced Programming.*
+*Report finalized on 17 November 2026 for CSA213 Advanced Programming.*

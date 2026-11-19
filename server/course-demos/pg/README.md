@@ -46,7 +46,7 @@ pg rows: 5
   pharmacyId: 1,
   medicineId: 1,
   quantity: 40,
-  pricePaise: 3000,
+  pricePaise: 3200,
   createdAt: ...,
   updatedAt: ...
 }

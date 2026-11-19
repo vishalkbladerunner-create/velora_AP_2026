@@ -38,7 +38,10 @@ const getAll = async (req, res) => {
     }
 
     const stock = await prisma.stockItem.findMany({
-      where: { pharmacyId: pharmacyId },
+      where: {
+        pharmacyId: pharmacyId,
+        pharmacy: { status: 'VERIFIED' },
+      },
       include: { medicine: true },
       orderBy: { id: 'asc' },
     });

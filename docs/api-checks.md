@@ -99,7 +99,7 @@ the local database; it never appears in search because it is not VERIFIED.
 
 ## Stock (commit 16, test t3)
 
-Run on 2026-11-12 by Sayem, `NODE_ENV=development`, seeded database (20 stock rows).
+Run on 2026-11-17 by Sayem, `NODE_ENV=development`, seeded database (20 stock rows).
 
 | # | Method | Request | Expected | Actual | Body / note |
 | --- | --- | --- | --- | --- | --- |
@@ -115,9 +115,11 @@ Run on 2026-11-12 by Sayem, `NODE_ENV=development`, seeded database (20 stock ro
 | 10 | `DELETE` | `/stock/21` (the row created in row 4) | 204 | 204 | empty body |
 | 11 | `DELETE` | `/stock/999` | 404 | 404 | `{"error":"Stock row not found"}` |
 
+PENDING pharmacies are excluded from the list: `GET /stock?pharmacyId=5` returns `[]`.
+
 ## Contract sweep & envelope verification (commit 19, test t4)
 
-Run on 2026-11-12 by Sayem, verifying status codes, error shapes, and absence of leakages across all routes.
+Run on 2026-11-17 by Sayem, verifying status codes, error shapes, and absence of leakages across all routes.
 
 | # | Check | Route / Request | Expected | Actual | Note |
 | --- | --- | --- | --- | --- | --- |
