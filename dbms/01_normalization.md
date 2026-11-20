@@ -181,4 +181,203 @@ and a migration (`20261112170000_stock_pair_unique`). `dbms/03_schema.sql` decla
 
 The register starts in UNF because `stock_lines` is a repeating group. Flattening it to one row per pharmacy–medicine pair gives 1NF. Removing the partial dependencies on `licence_number` and `medicine_name` gives `Pharmacy`, `Medicine` and `StockItem` in 2NF. None of the three has a transitive dependency, so they are in 3NF; every determinant is a candidate key, so they are also in BCNF.
 
-The three relations map directly to the Prisma models. The physical key `StockItem(pharmacyId, medicineId)` is now enforced by the CP2 migration.
+The three catalogue relations map directly to the Prisma models. The physical key `StockItem(pharmacyId, medicineId)` is now enforced by the CP2 migration.
+
+---
+
+# Part B — Identity, holds, audit and OAuth relations
+
+The CP1 analysis above covers the catalogue. The production build added seven
+relations for identity, reservations, audit and partner access. Each one is
+checked here with the same 1NF → 2NF → 3NF → BCNF sequence.
+
+## 10. User
+
+A user is one account. The unnormalized register would repeat the name, phone,
+address and password hash for every hold and every token, which is the same
+partial-dependency problem as the pharmacy register.
+
+| Column | Type | Constraint |
+| --- | --- | --- |
+| `id` | integer | primary key (surrogate) |
+| `name` | text | not null |
+| `phone` | text | not null, unique |
+| `address` | text | nullable |
+| `passwordHash` | text | not null |
+| `role` | text | not null, `CUSTOMER` by default |
+| `mfaSecret` | text | nullable |
+| `mfaEnabled` | boolean | not null, false by default |
+| `createdAt` | timestamp | not null, now() by default |
+
+Functional dependencies:
+
+- `id → name, phone, address, passwordHash, role, mfaSecret, mfaEnabled, createdAt`
+- `phone → name, address, passwordHash, role, mfaSecret, mfaEnabled, createdAt`
+
+Both `id` and `phone` are candidate keys. Every non-key attribute depends on
+the whole key, there is no composite key, and there is no transitive
+dependency. `User` is in **3NF and BCNF**. Keeping `mfaSecret` on the user is a
+1:1 attribute, not a repeating group.
+
+## 11. Pharmacy ownership
+
+`Pharmacy.ownerId` is a nullable unique foreign key to `User`. It records the
+1:1 relation “one account owns at most one pharmacy”.
+
+- `ownerId → Pharmacy` (when not null)
+- `Pharmacy.id → ownerId`
+
+`ownerId` is a candidate key when present, so the relation remains in **BCNF**.
+Null is allowed because the seeded pharmacies are unclaimed. A separate
+`PharmacyOwner` table would add no attribute and would make the 1:1 constraint
+harder to enforce, so the nullable unique column is the correct decomposition.
+
+## 12. Hold
+
+A hold is one reservation of one stock row by one user.
+
+| Column | Type | Constraint |
+| --- | --- | --- |
+| `id` | integer | primary key |
+| `userId` | integer | not null, FK → `User.id` |
+| `stockItemId` | integer | not null, FK → `StockItem.id` |
+| `quantity` | integer | not null |
+| `status` | text | not null, `ACTIVE` by default |
+| `expiresAt` | timestamp | not null |
+| `createdAt` | timestamp | not null, now() by default |
+
+FD: `id → userId, stockItemId, quantity, status, expiresAt, createdAt`.
+
+There is no natural key: the same user can reserve the same stock row more
+than once, and the same stock row can be held by different users at different
+times. `id` is the only determinant, so `Hold` is in **BCNF**. `quantity` and
+`expiresAt` describe the reservation, not the user or the stock row, so they
+stay here.
+
+## 13. RefreshToken
+
+A refresh token belongs to one user and one rotation family.
+
+| Column | Type | Constraint |
+| --- | --- | --- |
+| `id` | integer | primary key |
+| `userId` | integer | not null, FK → `User.id` |
+| `tokenHash` | text | not null, unique |
+| `familyId` | text | not null |
+| `expiresAt` | timestamp | not null |
+| `revokedAt` | timestamp | nullable |
+| `replacedByHash` | text | nullable |
+| `createdAt` | timestamp | not null, now() by default |
+
+FDs:
+
+- `id → userId, tokenHash, familyId, expiresAt, revokedAt, replacedByHash, createdAt`
+- `tokenHash → id, userId, familyId, expiresAt, revokedAt, replacedByHash, createdAt`
+
+`id` and `tokenHash` are candidate keys; `familyId` is not unique because a
+family contains a chain of rotated tokens. No non-key determinant exists, so
+`RefreshToken` is in **BCNF**. The token hash is stored instead of the raw
+token, which is a security decision, not a normalization one.
+
+## 14. AuditLog
+
+An audit row records one domain event.
+
+| Column | Type | Constraint |
+| --- | --- | --- |
+| `id` | integer | primary key |
+| `actorId` | integer | nullable, FK → `User.id` |
+| `action` | text | not null |
+| `entity` | text | not null |
+| `entityId` | text | nullable |
+| `metadata` | text | nullable |
+| `createdAt` | timestamp | not null, now() by default |
+
+FD: `id → actorId, action, entity, entityId, metadata, createdAt`.
+
+`actorId` is nullable because some events are system events. `metadata` is a
+serialized JSON string because the shape varies per action; at the database
+level it is one atomic value. `id` is the only determinant, so `AuditLog` is in
+**BCNF**. A separate `AuditMetadata` table would add a join without a stable
+schema, which is why the JSON string is used.
+
+## 15. OAuthClient
+
+A partner application is one client.
+
+| Column | Type | Constraint |
+| --- | --- | --- |
+| `id` | integer | primary key |
+| `name` | text | not null |
+| `clientId` | text | not null, unique |
+| `clientSecretHash` | text | not null |
+| `redirectUris` | text | not null |
+| `scopes` | text | not null |
+| `createdAt` | timestamp | not null, now() by default |
+
+FD: `id → name, clientId, clientSecretHash, redirectUris, scopes, createdAt`;
+`clientId → id, name, clientSecretHash, redirectUris, scopes, createdAt`.
+
+`id` and `clientId` are candidate keys, so the relation is in **BCNF**. The
+redirect URI list and the scope list are stored as newline/space separated
+strings. A strict 1NF version would split them into
+`OAuthClientRedirectUri` and `OAuthClientScope`; that is the normal form to use
+if the list ever needs to be queried or indexed. For a small configuration
+table the application treats each list as one opaque value, which is a
+documented trade-off rather than an accidental repeating group.
+
+## 16. AuthorizationCode
+
+A code is issued to one client for one user.
+
+| Column | Type | Constraint |
+| --- | --- | --- |
+| `id` | integer | primary key |
+| `codeHash` | text | not null, unique |
+| `clientId` | integer | not null, FK → `OAuthClient.id` |
+| `userId` | integer | not null, FK → `User.id` |
+| `scopes` | text | not null |
+| `redirectUri` | text | not null |
+| `codeChallenge` | text | nullable |
+| `codeChallengeMethod` | text | nullable |
+| `expiresAt` | timestamp | not null |
+| `usedAt` | timestamp | nullable |
+| `createdAt` | timestamp | not null, now() by default |
+
+FDs: `id → …`; `codeHash → id, clientId, userId, scopes, redirectUri,
+codeChallenge, codeChallengeMethod, expiresAt, usedAt, createdAt`.
+
+`id` and `codeHash` are candidate keys, so the relation is in **BCNF**. The
+code is single-use because `usedAt` is updated with a count guard; the code
+hash is stored, never the raw code.
+
+## 17. OAuthRefreshToken
+
+An OAuth refresh token is issued to one client for one user.
+
+FDs: `id → tokenHash, clientId, userId, scopes, expiresAt, revokedAt, createdAt`;
+`tokenHash → id, clientId, userId, scopes, expiresAt, revokedAt, createdAt`.
+
+`id` and `tokenHash` are candidate keys, so the relation is in **BCNF**.
+`clientId` is not unique because one client has many tokens over time.
+
+## 18. Summary of all ten relations
+
+| Relation | Candidate key(s) | Highest normal form |
+| --- | --- | --- |
+| `Medicine` | `id`, `name` | BCNF |
+| `Pharmacy` | `id`, `licenceNumber`, `ownerId` (when not null) | BCNF |
+| `StockItem` | `id`, `(pharmacyId, medicineId)` | BCNF |
+| `User` | `id`, `phone` | BCNF |
+| `Hold` | `id` | BCNF |
+| `RefreshToken` | `id`, `tokenHash` | BCNF |
+| `AuditLog` | `id` | BCNF |
+| `OAuthClient` | `id`, `clientId` | BCNF |
+| `AuthorizationCode` | `id`, `codeHash` | BCNF |
+| `OAuthRefreshToken` | `id`, `tokenHash` | BCNF |
+
+The relational design adds seven tables without repeating a fact: identity is
+on `User`, ownership is a unique foreign key on `Pharmacy`, reservations are
+their own relation, token hashes are their own relation, audit events are
+append-only, and OAuth clients, codes and tokens are separate because they
+have different lifetimes and different owners.

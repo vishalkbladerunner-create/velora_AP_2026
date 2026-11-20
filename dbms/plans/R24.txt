@@ -1,0 +1,33 @@
+-- R24
+-- look up a one-time authorization code by hash (POST /oauth/token).
+SELECT "id", "codeHash", "clientId", "userId", "scopes", "redirectUri",
+       "codeChallenge", "codeChallengeMethod", "expiresAt", "usedAt"
+FROM "AuthorizationCode"
+WHERE "codeHash" = 'timing-code-hash';
+
+=== R24 run 1 ===
+Seq Scan on "AuthorizationCode"  (cost=0.00..1.00 rows=1 width=188) (actual time=0.004..0.004 rows=0 loops=1)
+  Filter: ("codeHash" = 'timing-code-hash'::text)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=112
+Planning Time: 0.305 ms
+Execution Time: 0.018 ms
+
+=== R24 run 2 ===
+Seq Scan on "AuthorizationCode"  (cost=0.00..1.00 rows=1 width=188) (actual time=0.004..0.004 rows=0 loops=1)
+  Filter: ("codeHash" = 'timing-code-hash'::text)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=112
+Planning Time: 0.296 ms
+Execution Time: 0.019 ms
+
+=== R24 run 3 ===
+Seq Scan on "AuthorizationCode"  (cost=0.00..1.00 rows=1 width=188) (actual time=0.005..0.005 rows=0 loops=1)
+  Filter: ("codeHash" = 'timing-code-hash'::text)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=112
+Planning Time: 0.288 ms
+Execution Time: 0.022 ms

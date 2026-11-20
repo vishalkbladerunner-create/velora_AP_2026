@@ -1,0 +1,38 @@
+-- W10
+-- remove expired and long-revoked tokens (hourly cleanup).
+DELETE FROM "RefreshToken"
+WHERE "expiresAt" < now()
+RETURNING "id";
+
+=== W10 run 1 ===
+Delete on "RefreshToken"  (cost=0.00..1.00 rows=1 width=6) (actual time=0.006..0.006 rows=1 loops=1)
+  Buffers: shared hit=3
+  ->  Seq Scan on "RefreshToken"  (cost=0.00..1.00 rows=1 width=6) (actual time=0.002..0.002 rows=1 loops=1)
+        Filter: ("expiresAt" < now())
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=12
+Planning Time: 0.220 ms
+Execution Time: 0.067 ms
+
+=== W10 run 2 ===
+Delete on "RefreshToken"  (cost=0.00..1.00 rows=1 width=6) (actual time=0.007..0.007 rows=1 loops=1)
+  Buffers: shared hit=3
+  ->  Seq Scan on "RefreshToken"  (cost=0.00..1.00 rows=1 width=6) (actual time=0.003..0.003 rows=1 loops=1)
+        Filter: ("expiresAt" < now())
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=12
+Planning Time: 0.215 ms
+Execution Time: 0.067 ms
+
+=== W10 run 3 ===
+Delete on "RefreshToken"  (cost=0.00..1.00 rows=1 width=6) (actual time=0.005..0.005 rows=1 loops=1)
+  Buffers: shared hit=3
+  ->  Seq Scan on "RefreshToken"  (cost=0.00..1.00 rows=1 width=6) (actual time=0.001..0.001 rows=1 loops=1)
+        Filter: ("expiresAt" < now())
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=12
+Planning Time: 0.227 ms
+Execution Time: 0.066 ms

@@ -1,0 +1,70 @@
+-- W21
+-- issue an OAuth refresh token (POST /oauth/token).
+INSERT INTO "OAuthRefreshToken" ("tokenHash", "clientId", "userId", "scopes", "expiresAt")
+VALUES ('timing-oauth-refresh-new',
+        (SELECT "id" FROM "OAuthClient" ORDER BY "id" DESC LIMIT 1),
+        3, 'openid profile', now() + interval '14 days')
+RETURNING "id", "tokenHash";
+
+=== W21 run 1 ===
+Insert on "OAuthRefreshToken"  (cost=1.01..1.05 rows=1 width=100) (actual time=0.149..0.149 rows=1 loops=1)
+  Buffers: shared hit=59 dirtied=4
+  InitPlan 1 (returns $0)
+    ->  Limit  (cost=1.01..1.01 rows=1 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+          Buffers: shared hit=4
+          ->  Sort  (cost=1.01..1.01 rows=1 width=4) (actual time=0.009..0.010 rows=1 loops=1)
+                Sort Key: "OAuthClient".id DESC
+                Sort Method: quicksort  Memory: 25kB
+                Buffers: shared hit=4
+                ->  Seq Scan on "OAuthClient"  (cost=0.00..1.00 rows=1 width=4) (actual time=0.002..0.002 rows=1 loops=1)
+                      Buffers: shared hit=1
+  ->  Result  (cost=0.00..0.03 rows=1 width=100) (actual time=0.020..0.020 rows=1 loops=1)
+        Buffers: shared hit=16 dirtied=1
+Planning:
+  Buffers: shared hit=40
+Planning Time: 0.209 ms
+Trigger for constraint OAuthRefreshToken_clientId_fkey: time=0.091 calls=1
+Trigger for constraint OAuthRefreshToken_userId_fkey: time=0.219 calls=1
+Execution Time: 0.472 ms
+
+=== W21 run 2 ===
+Insert on "OAuthRefreshToken"  (cost=1.01..1.05 rows=1 width=100) (actual time=0.153..0.154 rows=1 loops=1)
+  Buffers: shared hit=59
+  InitPlan 1 (returns $0)
+    ->  Limit  (cost=1.01..1.01 rows=1 width=4) (actual time=0.009..0.009 rows=1 loops=1)
+          Buffers: shared hit=4
+          ->  Sort  (cost=1.01..1.01 rows=1 width=4) (actual time=0.008..0.008 rows=1 loops=1)
+                Sort Key: "OAuthClient".id DESC
+                Sort Method: quicksort  Memory: 25kB
+                Buffers: shared hit=4
+                ->  Seq Scan on "OAuthClient"  (cost=0.00..1.00 rows=1 width=4) (actual time=0.002..0.002 rows=1 loops=1)
+                      Buffers: shared hit=1
+  ->  Result  (cost=0.00..0.03 rows=1 width=100) (actual time=0.017..0.018 rows=1 loops=1)
+        Buffers: shared hit=16
+Planning:
+  Buffers: shared hit=40
+Planning Time: 0.194 ms
+Trigger for constraint OAuthRefreshToken_clientId_fkey: time=0.088 calls=1
+Trigger for constraint OAuthRefreshToken_userId_fkey: time=0.231 calls=1
+Execution Time: 0.486 ms
+
+=== W21 run 3 ===
+Insert on "OAuthRefreshToken"  (cost=1.01..1.05 rows=1 width=100) (actual time=0.100..0.100 rows=1 loops=1)
+  Buffers: shared hit=59
+  InitPlan 1 (returns $0)
+    ->  Limit  (cost=1.01..1.01 rows=1 width=4) (actual time=0.016..0.016 rows=1 loops=1)
+          Buffers: shared hit=4
+          ->  Sort  (cost=1.01..1.01 rows=1 width=4) (actual time=0.015..0.015 rows=1 loops=1)
+                Sort Key: "OAuthClient".id DESC
+                Sort Method: quicksort  Memory: 25kB
+                Buffers: shared hit=4
+                ->  Seq Scan on "OAuthClient"  (cost=0.00..1.00 rows=1 width=4) (actual time=0.002..0.002 rows=1 loops=1)
+                      Buffers: shared hit=1
+  ->  Result  (cost=0.00..0.03 rows=1 width=100) (actual time=0.025..0.025 rows=1 loops=1)
+        Buffers: shared hit=16
+Planning:
+  Buffers: shared hit=40
+Planning Time: 0.163 ms
+Trigger for constraint OAuthRefreshToken_clientId_fkey: time=0.074 calls=1
+Trigger for constraint OAuthRefreshToken_userId_fkey: time=0.238 calls=1
+Execution Time: 0.425 ms

@@ -1,0 +1,32 @@
+-- R16
+-- active holds that are due (expireHolds, before any hold request).
+SELECT "id", "stockItemId", "quantity"
+FROM "Hold"
+WHERE "status" = 'ACTIVE' AND "expiresAt" <= now();
+
+=== R16 run 1 ===
+Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=12) (actual time=0.002..0.003 rows=0 loops=1)
+  Filter: ((status = 'ACTIVE'::text) AND ("expiresAt" <= now()))
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=70
+Planning Time: 0.190 ms
+Execution Time: 0.011 ms
+
+=== R16 run 2 ===
+Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=12) (actual time=0.002..0.003 rows=0 loops=1)
+  Filter: ((status = 'ACTIVE'::text) AND ("expiresAt" <= now()))
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=70
+Planning Time: 0.218 ms
+Execution Time: 0.011 ms
+
+=== R16 run 3 ===
+Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=12) (actual time=0.002..0.002 rows=0 loops=1)
+  Filter: ((status = 'ACTIVE'::text) AND ("expiresAt" <= now()))
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=70
+Planning Time: 0.184 ms
+Execution Time: 0.010 ms

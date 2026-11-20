@@ -1,0 +1,36 @@
+-- W18
+-- register an OAuth client (POST /admin/oauth-clients).
+INSERT INTO "OAuthClient" ("name", "clientId", "clientSecretHash", "redirectUris", "scopes")
+VALUES ('Timing Client', 'vlr_timing_new', 'bcrypt-placeholder',
+        'http://localhost:3000/developers.html', 'openid profile')
+RETURNING "id", "name", "clientId";
+
+=== W18 run 1 ===
+Insert on "OAuthClient"  (cost=0.00..0.02 rows=1 width=172) (actual time=0.144..0.145 rows=1 loops=1)
+  Buffers: shared hit=65 dirtied=3
+  ->  Result  (cost=0.00..0.02 rows=1 width=172) (actual time=0.027..0.027 rows=1 loops=1)
+        Buffers: shared hit=13 dirtied=1
+Planning:
+  Buffers: shared hit=19
+Planning Time: 0.046 ms
+Execution Time: 0.165 ms
+
+=== W18 run 2 ===
+Insert on "OAuthClient"  (cost=0.00..0.02 rows=1 width=172) (actual time=0.134..0.135 rows=1 loops=1)
+  Buffers: shared hit=65
+  ->  Result  (cost=0.00..0.02 rows=1 width=172) (actual time=0.022..0.022 rows=1 loops=1)
+        Buffers: shared hit=13
+Planning:
+  Buffers: shared hit=19
+Planning Time: 0.048 ms
+Execution Time: 0.156 ms
+
+=== W18 run 3 ===
+Insert on "OAuthClient"  (cost=0.00..0.02 rows=1 width=172) (actual time=0.119..0.119 rows=1 loops=1)
+  Buffers: shared hit=65
+  ->  Result  (cost=0.00..0.02 rows=1 width=172) (actual time=0.022..0.022 rows=1 loops=1)
+        Buffers: shared hit=13
+Planning:
+  Buffers: shared hit=19
+Planning Time: 0.045 ms
+Execution Time: 0.140 ms

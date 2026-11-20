@@ -1,34 +1,35 @@
 -- R3
--- READ: one medicine by id (GET /medicines/:id; also the pre-check for PUT
--- and DELETE).
+-- one medicine by id (GET /medicines/:id; also the pre-check for PUT and DELETE).
 SELECT "id", "name", "form"
 FROM "Medicine"
 WHERE "id" = 1;
 
 === R3 run 1 ===
-Index Scan using "Medicine_pkey" on "Medicine"  (cost=0.15..8.17 rows=1 width=68) (actual time=0.003..0.003 rows=1 loops=1)
-  Index Cond: (id = 1)
-  Buffers: shared hit=2
+Seq Scan on "Medicine"  (cost=0.00..1.23 rows=1 width=21) (actual time=0.004..0.005 rows=1 loops=1)
+  Filter: (id = 1)
+  Rows Removed by Filter: 17
+  Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=78
-Planning Time: 0.260 ms
-Execution Time: 0.014 ms
+  Buffers: shared hit=85
+Planning Time: 0.290 ms
+Execution Time: 0.020 ms
 
 === R3 run 2 ===
-Index Scan using "Medicine_pkey" on "Medicine"  (cost=0.15..8.17 rows=1 width=68) (actual time=0.002..0.002 rows=1 loops=1)
-  Index Cond: (id = 1)
-  Buffers: shared hit=2
+Seq Scan on "Medicine"  (cost=0.00..1.23 rows=1 width=21) (actual time=0.003..0.004 rows=1 loops=1)
+  Filter: (id = 1)
+  Rows Removed by Filter: 17
+  Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=78
-Planning Time: 0.255 ms
-Execution Time: 0.015 ms
+  Buffers: shared hit=85
+Planning Time: 0.261 ms
+Execution Time: 0.020 ms
 
 === R3 run 3 ===
-Index Scan using "Medicine_pkey" on "Medicine"  (cost=0.15..8.17 rows=1 width=68) (actual time=0.003..0.003 rows=1 loops=1)
-  Index Cond: (id = 1)
-  Buffers: shared hit=2
+Seq Scan on "Medicine"  (cost=0.00..1.23 rows=1 width=21) (actual time=0.003..0.004 rows=1 loops=1)
+  Filter: (id = 1)
+  Rows Removed by Filter: 17
+  Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=78
-Planning Time: 0.269 ms
-Execution Time: 0.014 ms
-
+  Buffers: shared hit=85
+Planning Time: 0.263 ms
+Execution Time: 0.019 ms

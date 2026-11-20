@@ -1,30 +1,41 @@
 -- R1
--- READ: list every medicine, sorted by name (GET /medicines).
+-- list every medicine, sorted by name (GET /medicines).
 SELECT "id", "name", "form"
 FROM "Medicine"
 ORDER BY "name" ASC;
 
 === R1 run 1 ===
-Index Scan using "Medicine_name_key" on "Medicine"  (cost=0.15..60.90 rows=850 width=68) (actual time=0.003..0.007 rows=12 loops=1)
-  Buffers: shared hit=3
+Sort  (cost=1.56..1.60 rows=18 width=21) (actual time=0.027..0.028 rows=18 loops=1)
+  Sort Key: name
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=4
+  ->  Seq Scan on "Medicine"  (cost=0.00..1.18 rows=18 width=21) (actual time=0.002..0.002 rows=18 loops=1)
+        Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=94
-Planning Time: 0.316 ms
-Execution Time: 0.016 ms
+  Buffers: shared hit=91
+Planning Time: 0.256 ms
+Execution Time: 0.040 ms
 
 === R1 run 2 ===
-Index Scan using "Medicine_name_key" on "Medicine"  (cost=0.15..60.90 rows=850 width=68) (actual time=0.003..0.004 rows=12 loops=1)
-  Buffers: shared hit=2
+Sort  (cost=1.56..1.60 rows=18 width=21) (actual time=0.027..0.027 rows=18 loops=1)
+  Sort Key: name
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=4
+  ->  Seq Scan on "Medicine"  (cost=0.00..1.18 rows=18 width=21) (actual time=0.003..0.003 rows=18 loops=1)
+        Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=94
-Planning Time: 0.273 ms
-Execution Time: 0.011 ms
+  Buffers: shared hit=97
+Planning Time: 0.231 ms
+Execution Time: 0.037 ms
 
 === R1 run 3 ===
-Index Scan using "Medicine_name_key" on "Medicine"  (cost=0.15..60.90 rows=850 width=68) (actual time=0.003..0.004 rows=12 loops=1)
-  Buffers: shared hit=2
+Sort  (cost=1.56..1.60 rows=18 width=21) (actual time=0.027..0.028 rows=18 loops=1)
+  Sort Key: name
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=4
+  ->  Seq Scan on "Medicine"  (cost=0.00..1.18 rows=18 width=21) (actual time=0.003..0.003 rows=18 loops=1)
+        Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=94
-Planning Time: 0.259 ms
-Execution Time: 0.011 ms
-
+  Buffers: shared hit=97
+Planning Time: 0.246 ms
+Execution Time: 0.039 ms

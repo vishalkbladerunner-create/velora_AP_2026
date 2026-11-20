@@ -1,0 +1,77 @@
+-- R28
+-- one page of accounts with their pharmacy (GET /admin/users).
+SELECT u."id", u."name", u."phone", u."role", u."createdAt",
+       p."id" AS pharmacy_id, p."name" AS pharmacy_name, p."status" AS pharmacy_status
+FROM "User" u
+LEFT JOIN "Pharmacy" p ON p."ownerId" = u."id"
+ORDER BY u."id" ASC
+LIMIT 20 OFFSET 0;
+
+=== R28 run 1 ===
+Limit  (cost=2.17..2.22 rows=6 width=71) (actual time=0.014..0.015 rows=2 loops=1)
+  Buffers: shared hit=2
+  ->  Merge Left Join  (cost=2.17..2.22 rows=6 width=71) (actual time=0.013..0.014 rows=2 loops=1)
+        Merge Cond: (u.id = p."ownerId")
+        Buffers: shared hit=2
+        ->  Sort  (cost=1.03..1.03 rows=2 width=40) (actual time=0.008..0.008 rows=2 loops=1)
+              Sort Key: u.id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "User" u  (cost=0.00..1.02 rows=2 width=40) (actual time=0.002..0.002 rows=2 loops=1)
+                    Buffers: shared hit=1
+        ->  Sort  (cost=1.14..1.15 rows=6 width=35) (actual time=0.005..0.005 rows=1 loops=1)
+              Sort Key: p."ownerId"
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=35) (actual time=0.002..0.003 rows=6 loops=1)
+                    Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=186
+Planning Time: 0.431 ms
+Execution Time: 0.037 ms
+
+=== R28 run 2 ===
+Limit  (cost=2.17..2.22 rows=6 width=71) (actual time=0.013..0.014 rows=2 loops=1)
+  Buffers: shared hit=2
+  ->  Merge Left Join  (cost=2.17..2.22 rows=6 width=71) (actual time=0.013..0.013 rows=2 loops=1)
+        Merge Cond: (u.id = p."ownerId")
+        Buffers: shared hit=2
+        ->  Sort  (cost=1.03..1.03 rows=2 width=40) (actual time=0.007..0.007 rows=2 loops=1)
+              Sort Key: u.id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "User" u  (cost=0.00..1.02 rows=2 width=40) (actual time=0.002..0.002 rows=2 loops=1)
+                    Buffers: shared hit=1
+        ->  Sort  (cost=1.14..1.15 rows=6 width=35) (actual time=0.005..0.005 rows=1 loops=1)
+              Sort Key: p."ownerId"
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=35) (actual time=0.003..0.003 rows=6 loops=1)
+                    Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=186
+Planning Time: 0.425 ms
+Execution Time: 0.037 ms
+
+=== R28 run 3 ===
+Limit  (cost=2.17..2.22 rows=6 width=71) (actual time=0.012..0.013 rows=2 loops=1)
+  Buffers: shared hit=2
+  ->  Merge Left Join  (cost=2.17..2.22 rows=6 width=71) (actual time=0.012..0.012 rows=2 loops=1)
+        Merge Cond: (u.id = p."ownerId")
+        Buffers: shared hit=2
+        ->  Sort  (cost=1.03..1.03 rows=2 width=40) (actual time=0.007..0.007 rows=2 loops=1)
+              Sort Key: u.id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "User" u  (cost=0.00..1.02 rows=2 width=40) (actual time=0.002..0.002 rows=2 loops=1)
+                    Buffers: shared hit=1
+        ->  Sort  (cost=1.14..1.15 rows=6 width=35) (actual time=0.004..0.004 rows=1 loops=1)
+              Sort Key: p."ownerId"
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=35) (actual time=0.002..0.003 rows=6 loops=1)
+                    Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=186
+Planning Time: 0.394 ms
+Execution Time: 0.032 ms

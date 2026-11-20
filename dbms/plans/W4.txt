@@ -1,37 +1,38 @@
 -- W4
--- WRITE: create a pharmacy (POST /pharmacies, development only). The schema
--- supplies the PENDING status; the API never accepts a status from the body.
+-- create a pharmacy (POST /pharmacies, development only). The schema supplies the PENDING status; the API never accepts a status from the body.
 INSERT INTO "Pharmacy" ("name", "area", "address", "phone", "licenceNumber")
 VALUES ('Timing Pharmacy', 'Timing Area', '1 Timing Road', '9000000199', 'HR-SNP-TIMING-0199')
 RETURNING "id", "name", "area", "address", "phone", "licenceNumber", "status";
 
 === W4 run 1 ===
-Insert on "Pharmacy"  (cost=0.00..0.01 rows=1 width=196) (actual time=0.098..0.099 rows=1 loops=1)
-  Buffers: shared hit=65
-  ->  Result  (cost=0.00..0.01 rows=1 width=196) (actual time=0.013..0.013 rows=1 loops=1)
-        Buffers: shared hit=13
+Insert on "Pharmacy"  (cost=0.00..0.01 rows=1 width=208) (actual time=0.130..0.130 rows=1 loops=1)
+  Buffers: shared hit=78 dirtied=3
+  ->  Result  (cost=0.00..0.01 rows=1 width=208) (actual time=0.024..0.024 rows=1 loops=1)
+        Buffers: shared hit=13 dirtied=1
 Planning:
-  Buffers: shared hit=10
-Planning Time: 0.034 ms
-Execution Time: 0.115 ms
+  Buffers: shared hit=13
+Planning Time: 0.052 ms
+Trigger for constraint Pharmacy_ownerId_fkey: time=0.027 calls=1
+Execution Time: 0.175 ms
 
 === W4 run 2 ===
-Insert on "Pharmacy"  (cost=0.00..0.01 rows=1 width=196) (actual time=0.106..0.106 rows=1 loops=1)
-  Buffers: shared hit=65
-  ->  Result  (cost=0.00..0.01 rows=1 width=196) (actual time=0.013..0.013 rows=1 loops=1)
+Insert on "Pharmacy"  (cost=0.00..0.01 rows=1 width=208) (actual time=0.117..0.118 rows=1 loops=1)
+  Buffers: shared hit=78
+  ->  Result  (cost=0.00..0.01 rows=1 width=208) (actual time=0.018..0.018 rows=1 loops=1)
         Buffers: shared hit=13
 Planning:
-  Buffers: shared hit=10
-Planning Time: 0.040 ms
-Execution Time: 0.123 ms
+  Buffers: shared hit=13
+Planning Time: 0.058 ms
+Trigger for constraint Pharmacy_ownerId_fkey: time=0.024 calls=1
+Execution Time: 0.156 ms
 
 === W4 run 3 ===
-Insert on "Pharmacy"  (cost=0.00..0.01 rows=1 width=196) (actual time=0.120..0.120 rows=1 loops=1)
-  Buffers: shared hit=65
-  ->  Result  (cost=0.00..0.01 rows=1 width=196) (actual time=0.018..0.018 rows=1 loops=1)
+Insert on "Pharmacy"  (cost=0.00..0.01 rows=1 width=208) (actual time=0.116..0.116 rows=1 loops=1)
+  Buffers: shared hit=78
+  ->  Result  (cost=0.00..0.01 rows=1 width=208) (actual time=0.018..0.018 rows=1 loops=1)
         Buffers: shared hit=13
 Planning:
-  Buffers: shared hit=10
-Planning Time: 0.033 ms
-Execution Time: 0.135 ms
-
+  Buffers: shared hit=13
+Planning Time: 0.045 ms
+Trigger for constraint Pharmacy_ownerId_fkey: time=0.024 calls=1
+Execution Time: 0.152 ms

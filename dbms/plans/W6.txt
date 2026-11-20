@@ -1,0 +1,42 @@
+-- W6
+-- update the editable account fields. The same UPDATE shape serves the profile, the password hash and the MFA secret (PUT /auth/me, /auth/password, /auth/mfa/*).
+UPDATE "User"
+SET "name" = 'Vishal', "address" = 'Model Town, Sonipat'
+WHERE "id" = 3
+RETURNING "id", "name", "phone", "address";
+
+=== W6 run 1 ===
+Update on "User"  (cost=0.00..1.02 rows=1 width=70) (actual time=0.044..0.044 rows=1 loops=1)
+  Buffers: shared hit=17
+  ->  Seq Scan on "User"  (cost=0.00..1.02 rows=1 width=70) (actual time=0.007..0.007 rows=1 loops=1)
+        Filter: (id = 3)
+        Rows Removed by Filter: 1
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=81
+Planning Time: 0.260 ms
+Execution Time: 0.123 ms
+
+=== W6 run 2 ===
+Update on "User"  (cost=0.00..1.02 rows=1 width=70) (actual time=0.037..0.038 rows=1 loops=1)
+  Buffers: shared hit=17
+  ->  Seq Scan on "User"  (cost=0.00..1.02 rows=1 width=70) (actual time=0.006..0.007 rows=1 loops=1)
+        Filter: (id = 3)
+        Rows Removed by Filter: 1
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=81
+Planning Time: 0.241 ms
+Execution Time: 0.110 ms
+
+=== W6 run 3 ===
+Update on "User"  (cost=0.00..1.02 rows=1 width=70) (actual time=0.039..0.040 rows=1 loops=1)
+  Buffers: shared hit=17
+  ->  Seq Scan on "User"  (cost=0.00..1.02 rows=1 width=70) (actual time=0.007..0.007 rows=1 loops=1)
+        Filter: (id = 3)
+        Rows Removed by Filter: 1
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=81
+Planning Time: 0.258 ms
+Execution Time: 0.128 ms

@@ -1,0 +1,38 @@
+-- W16
+-- persist one audit event (EventEmitter listener).
+INSERT INTO "AuditLog" ("actorId", "action", "entity", "entityId")
+VALUES (3, 'timing.audit', 'User', '3')
+RETURNING "id", "action", "createdAt";
+
+=== W16 run 1 ===
+Insert on "AuditLog"  (cost=0.00..0.02 rows=1 width=144) (actual time=0.211..0.212 rows=1 loops=1)
+  Buffers: shared hit=86 dirtied=4
+  ->  Result  (cost=0.00..0.02 rows=1 width=144) (actual time=0.033..0.034 rows=1 loops=1)
+        Buffers: shared hit=14 dirtied=1
+Planning:
+  Buffers: shared hit=19
+Planning Time: 0.053 ms
+Trigger for constraint AuditLog_actorId_fkey: time=0.338 calls=1
+Execution Time: 0.575 ms
+
+=== W16 run 2 ===
+Insert on "AuditLog"  (cost=0.00..0.02 rows=1 width=144) (actual time=0.197..0.198 rows=1 loops=1)
+  Buffers: shared hit=86
+  ->  Result  (cost=0.00..0.02 rows=1 width=144) (actual time=0.024..0.024 rows=1 loops=1)
+        Buffers: shared hit=14
+Planning:
+  Buffers: shared hit=19
+Planning Time: 0.046 ms
+Trigger for constraint AuditLog_actorId_fkey: time=0.377 calls=1
+Execution Time: 0.596 ms
+
+=== W16 run 3 ===
+Insert on "AuditLog"  (cost=0.00..0.02 rows=1 width=144) (actual time=0.189..0.190 rows=1 loops=1)
+  Buffers: shared hit=86
+  ->  Result  (cost=0.00..0.02 rows=1 width=144) (actual time=0.025..0.025 rows=1 loops=1)
+        Buffers: shared hit=14
+Planning:
+  Buffers: shared hit=19
+Planning Time: 0.050 ms
+Trigger for constraint AuditLog_actorId_fkey: time=0.314 calls=1
+Execution Time: 0.527 ms

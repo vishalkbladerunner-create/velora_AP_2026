@@ -1,0 +1,62 @@
+-- R29
+-- one page of audit events with the actor (GET /admin/audit).
+SELECT a."id", a."action", a."entity", a."entityId", a."metadata", a."createdAt",
+       u."id" AS actor_id, u."name" AS actor_name
+FROM "AuditLog" a
+LEFT JOIN "User" u ON u."id" = a."actorId"
+ORDER BY a."createdAt" DESC
+LIMIT 25 OFFSET 0;
+
+=== R29 run 1 ===
+Limit  (cost=2.05..2.06 rows=1 width=114) (actual time=0.010..0.011 rows=0 loops=1)
+  Buffers: shared hit=4
+  ->  Sort  (cost=2.05..2.06 rows=1 width=114) (actual time=0.010..0.010 rows=0 loops=1)
+        Sort Key: a."createdAt" DESC
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=4
+        ->  Nested Loop Left Join  (cost=0.00..2.04 rows=1 width=114) (actual time=0.003..0.004 rows=0 loops=1)
+              Join Filter: (u.id = a."actorId")
+              Buffers: shared hit=1
+              ->  Seq Scan on "AuditLog" a  (cost=0.00..1.00 rows=1 width=104) (actual time=0.003..0.003 rows=0 loops=1)
+                    Buffers: shared hit=1
+              ->  Seq Scan on "User" u  (cost=0.00..1.02 rows=2 width=14) (never executed)
+Planning:
+  Buffers: shared hit=286
+Planning Time: 0.539 ms
+Execution Time: 0.025 ms
+
+=== R29 run 2 ===
+Limit  (cost=2.05..2.06 rows=1 width=114) (actual time=0.011..0.011 rows=0 loops=1)
+  Buffers: shared hit=4
+  ->  Sort  (cost=2.05..2.06 rows=1 width=114) (actual time=0.010..0.011 rows=0 loops=1)
+        Sort Key: a."createdAt" DESC
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=4
+        ->  Nested Loop Left Join  (cost=0.00..2.04 rows=1 width=114) (actual time=0.003..0.004 rows=0 loops=1)
+              Join Filter: (u.id = a."actorId")
+              Buffers: shared hit=1
+              ->  Seq Scan on "AuditLog" a  (cost=0.00..1.00 rows=1 width=104) (actual time=0.003..0.003 rows=0 loops=1)
+                    Buffers: shared hit=1
+              ->  Seq Scan on "User" u  (cost=0.00..1.02 rows=2 width=14) (never executed)
+Planning:
+  Buffers: shared hit=286
+Planning Time: 0.568 ms
+Execution Time: 0.027 ms
+
+=== R29 run 3 ===
+Limit  (cost=2.05..2.06 rows=1 width=114) (actual time=0.009..0.010 rows=0 loops=1)
+  Buffers: shared hit=4
+  ->  Sort  (cost=2.05..2.06 rows=1 width=114) (actual time=0.009..0.009 rows=0 loops=1)
+        Sort Key: a."createdAt" DESC
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=4
+        ->  Nested Loop Left Join  (cost=0.00..2.04 rows=1 width=114) (actual time=0.003..0.003 rows=0 loops=1)
+              Join Filter: (u.id = a."actorId")
+              Buffers: shared hit=1
+              ->  Seq Scan on "AuditLog" a  (cost=0.00..1.00 rows=1 width=104) (actual time=0.003..0.003 rows=0 loops=1)
+                    Buffers: shared hit=1
+              ->  Seq Scan on "User" u  (cost=0.00..1.02 rows=2 width=14) (never executed)
+Planning:
+  Buffers: shared hit=286
+Planning Time: 0.528 ms
+Execution Time: 0.023 ms

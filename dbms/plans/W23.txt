@@ -1,0 +1,41 @@
+-- W23
+-- add a stock row (POST /stock).
+INSERT INTO "StockItem" ("pharmacyId", "medicineId", "quantity", "pricePaise", "updatedAt")
+VALUES (6, 1, 5, 3200, now())
+RETURNING "id", "pharmacyId", "medicineId", "quantity";
+
+=== W23 run 1 ===
+Insert on "StockItem"  (cost=0.00..0.03 rows=1 width=36) (actual time=0.141..0.141 rows=1 loops=1)
+  Buffers: shared hit=63 dirtied=3
+  ->  Result  (cost=0.00..0.03 rows=1 width=36) (actual time=0.032..0.032 rows=1 loops=1)
+        Buffers: shared hit=13 dirtied=1
+Planning:
+  Buffers: shared hit=9
+Planning Time: 0.035 ms
+Trigger for constraint StockItem_pharmacyId_fkey: time=0.385 calls=1
+Trigger for constraint StockItem_medicineId_fkey: time=0.186 calls=1
+Execution Time: 0.734 ms
+
+=== W23 run 2 ===
+Insert on "StockItem"  (cost=0.00..0.03 rows=1 width=36) (actual time=0.124..0.124 rows=1 loops=1)
+  Buffers: shared hit=63
+  ->  Result  (cost=0.00..0.03 rows=1 width=36) (actual time=0.026..0.026 rows=1 loops=1)
+        Buffers: shared hit=13
+Planning:
+  Buffers: shared hit=9
+Planning Time: 0.037 ms
+Trigger for constraint StockItem_pharmacyId_fkey: time=0.389 calls=1
+Trigger for constraint StockItem_medicineId_fkey: time=0.179 calls=1
+Execution Time: 0.715 ms
+
+=== W23 run 3 ===
+Insert on "StockItem"  (cost=0.00..0.03 rows=1 width=36) (actual time=0.118..0.119 rows=1 loops=1)
+  Buffers: shared hit=63
+  ->  Result  (cost=0.00..0.03 rows=1 width=36) (actual time=0.025..0.025 rows=1 loops=1)
+        Buffers: shared hit=13
+Planning:
+  Buffers: shared hit=9
+Planning Time: 0.034 ms
+Trigger for constraint StockItem_pharmacyId_fkey: time=0.375 calls=1
+Trigger for constraint StockItem_medicineId_fkey: time=0.244 calls=1
+Execution Time: 0.760 ms

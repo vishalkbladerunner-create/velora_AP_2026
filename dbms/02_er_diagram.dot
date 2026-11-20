@@ -1,44 +1,29 @@
 digraph velora_er {
-    graph [rankdir=LR, bgcolor="white", pad="0.5", nodesep="1.1", ranksep="1.6",
+    graph [rankdir=LR, bgcolor="white", pad="0.4", nodesep="0.55", ranksep="1.3",
            fontname="Helvetica", label="Velora ER diagram", labelloc="t", fontsize=18];
-    node [shape=plaintext, fontname="Helvetica", fontsize=11];
-    edge [fontname="Helvetica", fontsize=11, color="#5b6779", penwidth=1.2];
+    node [shape=record, fontname="Helvetica", fontsize=9, color="#9fb0c4", penwidth=1.1];
+    edge [fontname="Helvetica", fontsize=8, color="#5b6779", penwidth=1.1, arrowhead=crow];
 
-    Medicine [label=<
-        <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#c6d1df">
-            <TR><TD BGCOLOR="#1d4ed8" ALIGN="CENTER"><FONT COLOR="white"><B>Medicine</B></FONT></TD></TR>
-            <TR><TD ALIGN="LEFT"><B>id</B> : integer <FONT COLOR="#5b6779">PK</FONT></TD></TR>
-            <TR><TD ALIGN="LEFT"><B>name</B> : text <FONT COLOR="#5b6779">UK</FONT></TD></TR>
-            <TR><TD ALIGN="LEFT"><B>form</B> : text</TD></TR>
-        </TABLE>>];
+    Medicine [label="{Medicine|id : int (PK)\lname : text (UK)\lform : text\l}"];
+    Pharmacy [label="{Pharmacy|id : int (PK)\lname : text\larea : text\laddress : text\lphone : text\licenceNumber : text (UK)\lstatus : text\l distanceKm : float\l ownerId : int (UK, FK)\l}"];
+    StockItem [label="{StockItem|id : int (PK)\lpharmacyId : int (FK)\lmedicineId : int (FK)\lquantity : int\lpricePaise : int\lcreatedAt : timestamp\lupdatedAt : timestamp\l}"];
+    User [label="{User|id : int (PK)\lname : text\lphone : text (UK)\laddress : text\lpasswordHash : text\lrole : text\lmfaSecret : text\lmfaEnabled : bool\lcreatedAt : timestamp\l}"];
+    Hold [label="{Hold|id : int (PK)\luserId : int (FK)\lstockItemId : int (FK)\lquantity : int\lstatus : text\lexpiresAt : timestamp\lcreatedAt : timestamp\l}"];
+    RefreshToken [label="{RefreshToken|id : int (PK)\luserId : int (FK)\ltokenHash : text (UK)\lfamilyId : text\lexpiresAt : timestamp\lrevokedAt : timestamp\lreplacedByHash : text\lcreatedAt : timestamp\l}"];
+    AuditLog [label="{AuditLog|id : int (PK)\lactorId : int (FK, null)\laction : text\lentity : text\lentityId : text\lmetadata : text\lcreatedAt : timestamp\l}"];
+    OAuthClient [label="{OAuthClient|id : int (PK)\lname : text\lclientId : text (UK)\lclientSecretHash : text\lredirectUris : text\lscopes : text\lcreatedAt : timestamp\l}"];
+    AuthorizationCode [label="{AuthorizationCode|id : int (PK)\lcodeHash : text (UK)\lclientId : int (FK)\luserId : int (FK)\lscopes : text\lredirectUri : text\lcodeChallenge : text\lcodeChallengeMethod : text\lexpiresAt : timestamp\lusedAt : timestamp\lcreatedAt : timestamp\l}"];
+    OAuthRefreshToken [label="{OAuthRefreshToken|id : int (PK)\ltokenHash : text (UK)\lclientId : int (FK)\luserId : int (FK)\lscopes : text\lexpiresAt : timestamp\lrevokedAt : timestamp\lcreatedAt : timestamp\l}"];
 
-    Pharmacy [label=<
-        <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#c6d1df">
-            <TR><TD BGCOLOR="#1d4ed8" ALIGN="CENTER"><FONT COLOR="white"><B>Pharmacy</B></FONT></TD></TR>
-            <TR><TD ALIGN="LEFT"><B>id</B> : integer <FONT COLOR="#5b6779">PK</FONT></TD></TR>
-            <TR><TD ALIGN="LEFT"><B>name</B> : text</TD></TR>
-            <TR><TD ALIGN="LEFT"><B>area</B> : text</TD></TR>
-            <TR><TD ALIGN="LEFT"><B>address</B> : text</TD></TR>
-            <TR><TD ALIGN="LEFT"><B>phone</B> : text</TD></TR>
-            <TR><TD ALIGN="LEFT"><B>licenceNumber</B> : text <FONT COLOR="#5b6779">UK</FONT></TD></TR>
-            <TR><TD ALIGN="LEFT"><B>status</B> : text <FONT COLOR="#5b6779">PENDING | VERIFIED</FONT></TD></TR>
-        </TABLE>>];
-
-    StockItem [label=<
-        <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#c6d1df">
-            <TR><TD BGCOLOR="#1d4ed8" ALIGN="CENTER"><FONT COLOR="white"><B>StockItem</B></FONT></TD></TR>
-            <TR><TD ALIGN="LEFT"><B>id</B> : integer <FONT COLOR="#5b6779">PK</FONT></TD></TR>
-            <TR><TD ALIGN="LEFT"><B>pharmacyId</B> : integer <FONT COLOR="#5b6779">FK</FONT></TD></TR>
-            <TR><TD ALIGN="LEFT"><B>medicineId</B> : integer <FONT COLOR="#5b6779">FK</FONT></TD></TR>
-            <TR><TD ALIGN="LEFT"><B>quantity</B> : integer</TD></TR>
-            <TR><TD ALIGN="LEFT"><B>pricePaise</B> : integer</TD></TR>
-            <TR><TD ALIGN="LEFT"><B>createdAt</B> : timestamp</TD></TR>
-            <TR><TD ALIGN="LEFT"><B>updatedAt</B> : timestamp</TD></TR>
-            <TR><TD ALIGN="LEFT"><FONT COLOR="#5b6779">UK (pharmacyId, medicineId)</FONT></TD></TR>
-        </TABLE>>];
-
-    Pharmacy -> StockItem [dir=both, arrowtail=tee, arrowhead=crow,
-        taillabel="1", headlabel="0..*", labeldistance=1.8, labelangle=0];
-    Medicine -> StockItem [dir=both, arrowtail=tee, arrowhead=crow,
-        taillabel="1", headlabel="0..*", labeldistance=1.8, labelangle=0];
+    Pharmacy -> StockItem [label="1 : N"];
+    Medicine -> StockItem [label="1 : N"];
+    User -> Hold [label="1 : N"];
+    StockItem -> Hold [label="1 : N"];
+    User -> Pharmacy [label="0..1 : 1 (owner)"];
+    User -> RefreshToken [label="1 : N"];
+    User -> AuditLog [label="1 : N (actor)"];
+    OAuthClient -> AuthorizationCode [label="1 : N"];
+    User -> AuthorizationCode [label="1 : N"];
+    OAuthClient -> OAuthRefreshToken [label="1 : N"];
+    User -> OAuthRefreshToken [label="1 : N"];
 }

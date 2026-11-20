@@ -1,0 +1,92 @@
+-- R26
+-- the stock export join (GET /admin/export/stock.csv).
+SELECT s."id", p."name" AS pharmacy, p."area", p."status",
+       m."name" AS medicine, m."form", s."quantity", s."pricePaise"
+FROM "StockItem" s
+JOIN "Pharmacy" p ON p."id" = s."pharmacyId"
+JOIN "Medicine" m ON m."id" = s."medicineId"
+ORDER BY s."id" ASC;
+
+=== R26 run 1 ===
+Sort  (cost=4.86..4.94 rows=31 width=65) (actual time=0.039..0.040 rows=31 loops=1)
+  Sort Key: s.id
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=6
+  ->  Hash Join  (cost=2.54..4.09 rows=31 width=65) (actual time=0.022..0.028 rows=31 loops=1)
+        Hash Cond: (s."medicineId" = m.id)
+        Buffers: shared hit=3
+        ->  Hash Join  (cost=1.14..2.58 rows=31 width=52) (actual time=0.014..0.018 rows=31 loops=1)
+              Hash Cond: (s."pharmacyId" = p.id)
+              Buffers: shared hit=2
+              ->  Seq Scan on "StockItem" s  (cost=0.00..1.31 rows=31 width=20) (actual time=0.003..0.003 rows=31 loops=1)
+                    Buffers: shared hit=1
+              ->  Hash  (cost=1.06..1.06 rows=6 width=40) (actual time=0.006..0.006 rows=6 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=40) (actual time=0.002..0.002 rows=6 loops=1)
+                          Buffers: shared hit=1
+        ->  Hash  (cost=1.18..1.18 rows=18 width=21) (actual time=0.005..0.005 rows=18 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "Medicine" m  (cost=0.00..1.18 rows=18 width=21) (actual time=0.001..0.002 rows=18 loops=1)
+                    Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=245
+Planning Time: 0.721 ms
+Execution Time: 0.073 ms
+
+=== R26 run 2 ===
+Sort  (cost=4.86..4.94 rows=31 width=65) (actual time=0.042..0.043 rows=31 loops=1)
+  Sort Key: s.id
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=6
+  ->  Hash Join  (cost=2.54..4.09 rows=31 width=65) (actual time=0.024..0.030 rows=31 loops=1)
+        Hash Cond: (s."medicineId" = m.id)
+        Buffers: shared hit=3
+        ->  Hash Join  (cost=1.14..2.58 rows=31 width=52) (actual time=0.016..0.020 rows=31 loops=1)
+              Hash Cond: (s."pharmacyId" = p.id)
+              Buffers: shared hit=2
+              ->  Seq Scan on "StockItem" s  (cost=0.00..1.31 rows=31 width=20) (actual time=0.003..0.004 rows=31 loops=1)
+                    Buffers: shared hit=1
+              ->  Hash  (cost=1.06..1.06 rows=6 width=40) (actual time=0.007..0.008 rows=6 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=40) (actual time=0.002..0.003 rows=6 loops=1)
+                          Buffers: shared hit=1
+        ->  Hash  (cost=1.18..1.18 rows=18 width=21) (actual time=0.005..0.005 rows=18 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "Medicine" m  (cost=0.00..1.18 rows=18 width=21) (actual time=0.001..0.002 rows=18 loops=1)
+                    Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=245
+Planning Time: 0.627 ms
+Execution Time: 0.071 ms
+
+=== R26 run 3 ===
+Sort  (cost=4.86..4.94 rows=31 width=65) (actual time=0.038..0.039 rows=31 loops=1)
+  Sort Key: s.id
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=6
+  ->  Hash Join  (cost=2.54..4.09 rows=31 width=65) (actual time=0.021..0.027 rows=31 loops=1)
+        Hash Cond: (s."medicineId" = m.id)
+        Buffers: shared hit=3
+        ->  Hash Join  (cost=1.14..2.58 rows=31 width=52) (actual time=0.014..0.018 rows=31 loops=1)
+              Hash Cond: (s."pharmacyId" = p.id)
+              Buffers: shared hit=2
+              ->  Seq Scan on "StockItem" s  (cost=0.00..1.31 rows=31 width=20) (actual time=0.003..0.004 rows=31 loops=1)
+                    Buffers: shared hit=1
+              ->  Hash  (cost=1.06..1.06 rows=6 width=40) (actual time=0.007..0.007 rows=6 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=40) (actual time=0.002..0.003 rows=6 loops=1)
+                          Buffers: shared hit=1
+        ->  Hash  (cost=1.18..1.18 rows=18 width=21) (actual time=0.004..0.004 rows=18 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "Medicine" m  (cost=0.00..1.18 rows=18 width=21) (actual time=0.001..0.002 rows=18 loops=1)
+                    Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=245
+Planning Time: 0.636 ms
+Execution Time: 0.066 ms

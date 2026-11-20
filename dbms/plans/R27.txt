@@ -1,0 +1,74 @@
+-- R27
+-- one page of pharmacies with the owner (GET /admin/pharmacies).
+SELECT p."id", p."name", p."area", p."status", p."licenceNumber",
+       u."id" AS owner_id, u."name" AS owner_name, u."phone" AS owner_phone
+FROM "Pharmacy" p
+LEFT JOIN "User" u ON u."id" = p."ownerId"
+ORDER BY p."id" ASC
+LIMIT 20 OFFSET 0;
+
+=== R27 run 1 ===
+Limit  (cost=2.20..2.21 rows=6 width=82) (actual time=0.018..0.019 rows=6 loops=1)
+  Buffers: shared hit=5
+  ->  Sort  (cost=2.20..2.21 rows=6 width=82) (actual time=0.017..0.018 rows=6 loops=1)
+        Sort Key: p.id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=5
+        ->  Hash Left Join  (cost=1.04..2.12 rows=6 width=82) (actual time=0.010..0.011 rows=6 loops=1)
+              Hash Cond: (p."ownerId" = u.id)
+              Buffers: shared hit=2
+              ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=61) (actual time=0.003..0.004 rows=6 loops=1)
+                    Buffers: shared hit=1
+              ->  Hash  (cost=1.02..1.02 rows=2 width=25) (actual time=0.004..0.005 rows=2 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on "User" u  (cost=0.00..1.02 rows=2 width=25) (actual time=0.001..0.001 rows=2 loops=1)
+                          Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=186
+Planning Time: 0.409 ms
+Execution Time: 0.034 ms
+
+=== R27 run 2 ===
+Limit  (cost=2.20..2.21 rows=6 width=82) (actual time=0.019..0.019 rows=6 loops=1)
+  Buffers: shared hit=5
+  ->  Sort  (cost=2.20..2.21 rows=6 width=82) (actual time=0.018..0.019 rows=6 loops=1)
+        Sort Key: p.id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=5
+        ->  Hash Left Join  (cost=1.04..2.12 rows=6 width=82) (actual time=0.010..0.011 rows=6 loops=1)
+              Hash Cond: (p."ownerId" = u.id)
+              Buffers: shared hit=2
+              ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=61) (actual time=0.003..0.004 rows=6 loops=1)
+                    Buffers: shared hit=1
+              ->  Hash  (cost=1.02..1.02 rows=2 width=25) (actual time=0.004..0.004 rows=2 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on "User" u  (cost=0.00..1.02 rows=2 width=25) (actual time=0.001..0.001 rows=2 loops=1)
+                          Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=186
+Planning Time: 0.422 ms
+Execution Time: 0.035 ms
+
+=== R27 run 3 ===
+Limit  (cost=2.20..2.21 rows=6 width=82) (actual time=0.019..0.020 rows=6 loops=1)
+  Buffers: shared hit=5
+  ->  Sort  (cost=2.20..2.21 rows=6 width=82) (actual time=0.018..0.019 rows=6 loops=1)
+        Sort Key: p.id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=5
+        ->  Hash Left Join  (cost=1.04..2.12 rows=6 width=82) (actual time=0.010..0.012 rows=6 loops=1)
+              Hash Cond: (p."ownerId" = u.id)
+              Buffers: shared hit=2
+              ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=61) (actual time=0.003..0.004 rows=6 loops=1)
+                    Buffers: shared hit=1
+              ->  Hash  (cost=1.02..1.02 rows=2 width=25) (actual time=0.004..0.005 rows=2 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on "User" u  (cost=0.00..1.02 rows=2 width=25) (actual time=0.001..0.001 rows=2 loops=1)
+                          Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=186
+Planning Time: 0.416 ms
+Execution Time: 0.036 ms
