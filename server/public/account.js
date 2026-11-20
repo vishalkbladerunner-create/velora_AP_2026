@@ -4,15 +4,34 @@ const loggedInEl = document.getElementById('logged-in');
 const avatarEl = document.getElementById('avatar');
 const userNameEl = document.getElementById('user-name');
 const userPhoneEl = document.getElementById('user-phone');
-const accountTypeBadgeEl = document.getElementById('account-type-badge');
+const roleBadgeEl = document.getElementById('account-type-badge');
 const holdsListEl = document.getElementById('holds-list');
 const holdsEmptyEl = document.getElementById('holds-empty');
 const holdsCountEl = document.getElementById('holds-count');
 const registerForm = document.getElementById('register-form');
 const loginForm = document.getElementById('login-form');
 const logoutButton = document.getElementById('logout-button');
+const adminLink = document.getElementById('admin-link');
+const securityPanel = document.getElementById('security-panel');
+const passwordForm = document.getElementById('password-form');
+const currentPasswordInput = document.getElementById('current-password');
+const newPasswordInput = document.getElementById('new-password');
+const logoutAllButton = document.getElementById('logout-all-button');
+const loginTotp = document.getElementById('login-totp');
+const loginTotpLabel = document.getElementById('login-totp-label');
+const mfaStatus = document.getElementById('mfa-status');
+const mfaSetupButton = document.getElementById('mfa-setup-button');
+const mfaSetup = document.getElementById('mfa-setup');
+const mfaSecret = document.getElementById('mfa-secret');
+const mfaCode = document.getElementById('mfa-code');
+const mfaEnableButton = document.getElementById('mfa-enable-button');
+const mfaCancelButton = document.getElementById('mfa-cancel-button');
+const mfaDisable = document.getElementById('mfa-disable');
+const mfaPassword = document.getElementById('mfa-password');
+const mfaDisableCode = document.getElementById('mfa-disable-code');
+const mfaDisableButton = document.getElementById('mfa-disable-button');
 const tabs = document.querySelectorAll('[data-tab]');
-const accountTypeInputs = document.querySelectorAll('input[name="accountType"]');
+const roleInputs = document.querySelectorAll('input[name="role"]');
 const pharmacyFields = document.getElementById('pharmacy-fields');
 const pharmacyPanel = document.getElementById('pharmacy-panel');
 const customerPanel = document.getElementById('customer-panel');
@@ -64,7 +83,7 @@ function redirectNext() {
 }
 
 function selectedAccountType() {
-  const checked = document.querySelector('input[name="accountType"]:checked');
+  const checked = document.querySelector('input[name="role"]:checked');
   return checked ? checked.value : 'CUSTOMER';
 }
 
@@ -88,8 +107,12 @@ function showLoggedOut() {
   holdsCountEl.textContent = '';
   pharmacyPanel.hidden = true;
   customerPanel.hidden = true;
+  securityPanel.hidden = true;
+  mfaSetup.hidden = true;
+  mfaDisable.hidden = true;
   setPharmacyLinks(false);
   if (authLink) authLink.textContent = 'Sign in';
+  if (adminLink) adminLink.hidden = true;
 }
 
 function showLoggedIn(user) {
@@ -103,13 +126,20 @@ function showLoggedIn(user) {
   profilePhone.value = user.phone;
   profileAddress.value = user.address || '';
 
-  const isPharmacy = user.accountType === 'PHARMACY';
-  accountTypeBadgeEl.textContent = isPharmacy ? 'Pharmacy owner' : 'Customer';
-  accountTypeBadgeEl.className = isPharmacy ? 'pill-verified' : 'pill-soft';
+  const isAdmin = user.role === 'ADMIN';
+  const isPharmacy = user.role === 'PHARMACY';
+  roleBadgeEl.textContent = isAdmin ? 'Administrator' : (isPharmacy ? 'Pharmacy owner' : 'Customer');
+  roleBadgeEl.className = isAdmin || isPharmacy ? 'pill-verified' : 'pill-soft';
   pharmacyPanel.hidden = !isPharmacy;
-  customerPanel.hidden = isPharmacy;
+  customerPanel.hidden = isPharmacy || isAdmin;
+  securityPanel.hidden = false;
+  mfaStatus.textContent = user.mfaEnabled ? 'Enabled on this account.' : 'Not enabled.';
+  mfaSetupButton.hidden = Boolean(user.mfaEnabled);
+  mfaSetup.hidden = true;
+  mfaDisable.hidden = !user.mfaEnabled;
   setPharmacyLinks(isPharmacy);
   if (authLink) authLink.textContent = 'Account';
+  if (adminLink) adminLink.hidden = user.role !== 'ADMIN';
 }
 
 function formatDate(value) {
@@ -169,7 +199,7 @@ function renderHolds(holds) {
       cancel.textContent = 'Cancel';
       cancel.addEventListener('click', async () => {
         cancel.disabled = true;
-        const response = await fetch('/holds/' + encodeURIComponent(hold.id), { method: 'DELETE' });
+        const response = await Velora.api('/api/v1/holds/' + encodeURIComponent(hold.id), { method: 'DELETE' });
 
         if (response.status === 401) {
           showLoggedOut();
@@ -196,7 +226,7 @@ function renderHolds(holds) {
 }
 
 async function loadHolds() {
-  const response = await fetch('/holds');
+  const response = await Velora.api('/api/v1/holds');
 
   if (response.status === 401) {
     showLoggedOut();
@@ -238,7 +268,7 @@ function isCompletePharmacy(pharmacy) {
 }
 
 async function registerPharmacy(pharmacy) {
-  const response = await fetch('/pharmacies/mine', {
+  const response = await Velora.api('/api/v1/pharmacies/mine', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(pharmacy),
@@ -249,7 +279,7 @@ async function registerPharmacy(pharmacy) {
 }
 
 async function updatePharmacy(pharmacy) {
-  const response = await fetch('/pharmacies/mine', {
+  const response = await Velora.api('/api/v1/pharmacies/mine', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -298,12 +328,12 @@ function showPharmacyEdit() {
 }
 
 async function loadPharmacy() {
-  if (!currentUser || currentUser.accountType !== 'PHARMACY') {
+  if (!currentUser || currentUser.role !== 'PHARMACY') {
     pharmacyPanel.hidden = true;
     return;
   }
 
-  const response = await fetch('/pharmacies/mine');
+  const response = await Velora.api('/api/v1/pharmacies/mine');
 
   if (response.status === 403) {
     pharmacyPanel.hidden = true;
@@ -326,7 +356,7 @@ async function loadPharmacy() {
 }
 
 async function loadMe() {
-  const response = await fetch('/auth/me');
+  const response = await Velora.api('/api/v1/auth/me');
 
   if (response.status === 401) {
     showLoggedOut();
@@ -361,7 +391,7 @@ tabs.forEach((tab) => {
   tab.addEventListener('click', () => selectTab(tab.getAttribute('data-tab')));
 });
 
-accountTypeInputs.forEach((input) => {
+roleInputs.forEach((input) => {
   input.addEventListener('change', togglePharmacyFields);
 });
 
@@ -372,7 +402,7 @@ registerForm.addEventListener('submit', async (event) => {
   const phone = document.getElementById('register-phone').value.trim();
   const address = document.getElementById('register-address').value.trim();
   const password = document.getElementById('register-password').value;
-  const accountType = selectedAccountType();
+  const role = selectedAccountType();
   const pharmacy = readPharmacy('signup-');
 
   if (name.length < 2 || phone.length !== 10 || address.length < 5) {
@@ -380,12 +410,12 @@ registerForm.addEventListener('submit', async (event) => {
     return;
   }
 
-  if (accountType === 'PHARMACY' && !isCompletePharmacy(pharmacy)) {
+  if (role === 'PHARMACY' && !isCompletePharmacy(pharmacy)) {
     showMessage('Complete every pharmacy field for a pharmacy account.', 'error');
     return;
   }
 
-  const response = await fetch('/auth/register', {
+  const response = await Velora.api('/api/v1/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -393,7 +423,7 @@ registerForm.addEventListener('submit', async (event) => {
       phone: phone,
       address: address,
       password: password,
-      accountType: accountType,
+      role: role,
     }),
   });
 
@@ -404,10 +434,11 @@ registerForm.addEventListener('submit', async (event) => {
     return;
   }
 
+  Velora.setToken(body.accessToken);
   registerForm.reset();
   togglePharmacyFields();
 
-  if (accountType === 'PHARMACY') {
+  if (role === 'PHARMACY') {
     const result = await registerPharmacy(pharmacy);
 
     if (!result.ok) {
@@ -418,7 +449,7 @@ registerForm.addEventListener('submit', async (event) => {
     }
   }
 
-  Velora.toast(accountType === 'PHARMACY' ? 'Pharmacy account created.' : 'Customer account created.', 'success');
+  Velora.toast(role === 'PHARMACY' ? 'Pharmacy account created.' : 'Customer account created.', 'success');
 
   if (redirectNext()) return;
   await loadMe();
@@ -429,21 +460,31 @@ loginForm.addEventListener('submit', async (event) => {
 
   const phone = document.getElementById('login-phone').value.trim();
   const password = document.getElementById('login-password').value;
+  const totpCode = loginTotp.hidden ? '' : loginTotp.value.trim();
 
-  const response = await fetch('/auth/login', {
+  const response = await Velora.api('/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: phone, password: password }),
+    body: JSON.stringify({ phone: phone, password: password, totp: totpCode }),
   });
 
   const body = await readJson(response);
 
   if (!response.ok) {
+    if (body.mfaRequired) {
+      loginTotpLabel.hidden = false;
+      loginTotp.hidden = false;
+      loginTotp.focus();
+    }
+
     showMessage(body.error || 'Could not log in.', 'error');
     return;
   }
 
+  Velora.setToken(body.accessToken);
   loginForm.reset();
+  loginTotp.hidden = true;
+  loginTotpLabel.hidden = true;
   hideMessage();
   Velora.toast('Welcome back.', 'success');
 
@@ -452,7 +493,7 @@ loginForm.addEventListener('submit', async (event) => {
 });
 
 logoutButton.addEventListener('click', async () => {
-  const response = await fetch('/auth/logout', { method: 'POST' });
+  const response = await Velora.api('/api/v1/auth/logout', { method: 'POST' });
 
   if (!response.ok) {
     const body = await readJson(response);
@@ -460,8 +501,124 @@ logoutButton.addEventListener('click', async () => {
     return;
   }
 
+  Velora.clearToken();
   showLoggedOut();
   Velora.toast('Logged out.', 'info');
+});
+
+passwordForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const currentPassword = currentPasswordInput.value;
+  const newPassword = newPasswordInput.value;
+
+  if (newPassword.length < 8) {
+    Velora.toast('The new password must be at least 8 characters.', 'error');
+    return;
+  }
+
+  const response = await Velora.api('/api/v1/auth/password', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentPassword: currentPassword, newPassword: newPassword }),
+  });
+
+  if (!response.ok) {
+    const body = await readJson(response);
+    Velora.toast(body.error || 'Could not change the password.', 'error');
+    return;
+  }
+
+  passwordForm.reset();
+  Velora.clearToken();
+  showLoggedOut();
+  Velora.toast('Password changed. Sign in again.', 'success');
+});
+
+logoutAllButton.addEventListener('click', async () => {
+  const response = await Velora.api('/api/v1/auth/logout-all', { method: 'POST' });
+
+  if (!response.ok) {
+    const body = await readJson(response);
+    Velora.toast(body.error || 'Could not end the sessions.', 'error');
+    return;
+  }
+
+  Velora.clearToken();
+  showLoggedOut();
+  Velora.toast('Signed out on every device.', 'info');
+});
+
+mfaSetupButton.addEventListener('click', async () => {
+  const response = await Velora.api('/api/v1/auth/mfa/setup', { method: 'POST' });
+  const body = await readJson(response);
+
+  if (!response.ok) {
+    Velora.toast(body.error || 'Could not start the authenticator setup.', 'error');
+    return;
+  }
+
+  mfaSecret.textContent = 'Secret: ' + body.secret + '\n\n' + body.otpauthUrl;
+  mfaSetup.hidden = false;
+  mfaSetupButton.hidden = true;
+  mfaCode.focus();
+});
+
+mfaCancelButton.addEventListener('click', () => {
+  mfaSetup.hidden = true;
+  mfaSetupButton.hidden = false;
+  mfaCode.value = '';
+});
+
+mfaEnableButton.addEventListener('click', async () => {
+  const code = mfaCode.value.trim();
+
+  if (!/^[0-9]{6}$/.test(code)) {
+    Velora.toast('Enter the six-digit code from the authenticator.', 'error');
+    return;
+  }
+
+  const response = await Velora.api('/api/v1/auth/mfa/enable', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ totp: code }),
+  });
+  const body = await readJson(response);
+
+  if (!response.ok) {
+    Velora.toast(body.error || 'Could not enable two-factor authentication.', 'error');
+    return;
+  }
+
+  mfaCode.value = '';
+  Velora.toast('Two-factor authentication enabled.', 'success');
+  await loadMe();
+});
+
+mfaDisableButton.addEventListener('click', async () => {
+  const code = mfaDisableCode.value.trim();
+
+  if (!mfaPassword.value || !/^[0-9]{6}$/.test(code)) {
+    Velora.toast('Enter your password and a current authenticator code.', 'error');
+    return;
+  }
+
+  const response = await Velora.api('/api/v1/auth/mfa/disable', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: mfaPassword.value, totp: code }),
+  });
+
+  if (!response.ok) {
+    const body = await readJson(response);
+    Velora.toast(body.error || 'Could not disable two-factor authentication.', 'error');
+    return;
+  }
+
+  mfaPassword.value = '';
+  mfaDisableCode.value = '';
+  Velora.toast('Two-factor authentication disabled.', 'info');
+  await loadMe();
 });
 
 profileForm.addEventListener('submit', async (event) => {
@@ -476,7 +633,7 @@ profileForm.addEventListener('submit', async (event) => {
     return;
   }
 
-  const response = await fetch('/auth/me', {
+  const response = await Velora.api('/api/v1/auth/me', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: name, phone: phone, address: address }),

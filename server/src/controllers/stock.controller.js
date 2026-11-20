@@ -1,4 +1,6 @@
 const prisma = require('../db/prisma');
+const audit = require('../services/audit.service');
+const { canManagePharmacy } = require('../auth/policies');
 
 function readId(req) {
   const id = Number(req.params.id);
@@ -78,7 +80,7 @@ const createStock = async (req, res) => {
       return;
     }
 
-    if (pharmacy.ownerId !== req.session.userId) {
+    if (!canManagePharmacy(req.user, pharmacy)) {
       res.status(403).json({ error: 'You can only add stock to your own pharmacy' });
       return;
     }
@@ -102,6 +104,13 @@ const createStock = async (req, res) => {
         updatedAt: new Date(),
       },
       include: { medicine: true },
+    });
+
+    audit.record('stock.create', {
+      actorId: req.user.id,
+      entity: 'StockItem',
+      entityId: row.id,
+      metadata: { pharmacyId: pharmacyId, medicineId: medicineId, quantity: quantity },
     });
 
     res.status(201).json(row);
@@ -141,7 +150,7 @@ const updateStock = async (req, res) => {
       return;
     }
 
-    if (existing.pharmacy.ownerId !== req.session.userId) {
+    if (!canManagePharmacy(req.user, existing.pharmacy)) {
       res.status(403).json({ error: 'You can only change your own pharmacy stock' });
       return;
     }
@@ -154,6 +163,13 @@ const updateStock = async (req, res) => {
         updatedAt: new Date(),
       },
       include: { medicine: true },
+    });
+
+    audit.record('stock.update', {
+      actorId: req.user.id,
+      entity: 'StockItem',
+      entityId: row.id,
+      metadata: { quantity: quantity, pricePaise: pricePaise },
     });
 
     res.json(row);
@@ -183,12 +199,19 @@ const deleteStock = async (req, res) => {
       return;
     }
 
-    if (existing.pharmacy.ownerId !== req.session.userId) {
+    if (!canManagePharmacy(req.user, existing.pharmacy)) {
       res.status(403).json({ error: 'You can only change your own pharmacy stock' });
       return;
     }
 
     await prisma.stockItem.delete({ where: { id: id } });
+
+    audit.record('stock.delete', {
+      actorId: req.user.id,
+      entity: 'StockItem',
+      entityId: id,
+      metadata: { pharmacyId: existing.pharmacyId, medicineId: existing.medicineId },
+    });
 
     res.status(204).send();
   } catch (error) {

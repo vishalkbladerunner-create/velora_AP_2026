@@ -1,6 +1,7 @@
 // Prisma schema for the Velora API.
-// Five models: a Medicine, a Pharmacy, the StockItem that links them, a User,
-// and the Hold that reserves stock for 30 minutes.
+// Medicines, pharmacies and the stock that links them; accounts, refresh
+// tokens, 30-minute holds, an audit trail, and the OAuth/OIDC clients used by
+// partner integrations.
 // Docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -52,16 +53,23 @@ model StockItem {
 }
 
 // A Velora account. The password is stored only as a bcrypt hash.
+// role is CUSTOMER, PHARMACY or ADMIN and drives the permission map.
 model User {
-  id           Int       @id @default(autoincrement())
-  name         String
-  phone        String    @unique
-  address      String?
-  passwordHash String
-  accountType  String    @default("CUSTOMER")
-  createdAt    DateTime  @default(now())
-  holds        Hold[]
-  pharmacy     Pharmacy?
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  phone              String               @unique
+  address            String?
+  passwordHash       String
+  role               String               @default("CUSTOMER")
+  mfaSecret          String?
+  mfaEnabled         Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  holds              Hold[]
+  pharmacy           Pharmacy?
+  refreshTokens      RefreshToken[]
+  auditLogs          AuditLog[]
+  authorizationCodes AuthorizationCode[]
+  oauthRefreshTokens OAuthRefreshToken[]
 }
 
 // A 30-minute reservation against one stock row.
@@ -75,4 +83,86 @@ model Hold {
   createdAt   DateTime  @default(now())
   user        User      @relation(fields: [userId], references: [id])
   stockItem   StockItem @relation(fields: [stockItemId], references: [id])
+}
+
+// Rotating refresh tokens for first-party sessions. Only the SHA-256 hash is
+// stored; the raw token lives in an HttpOnly cookie. familyId groups a rotation
+// chain so a replayed token can revoke the whole family.
+model RefreshToken {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  tokenHash      String    @unique
+  familyId       String
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  replacedByHash String?
+  createdAt      DateTime  @default(now())
+  user           User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+// Domain events persisted by the audit listener (EventEmitter).
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  actorId   Int?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  String?
+  createdAt DateTime @default(now())
+  actor     User?    @relation(fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+// A partner application registered by an administrator for the OAuth/OIDC
+// authorization server. Secrets are stored hashed.
+model OAuthClient {
+  id               Int                 @id @default(autoincrement())
+  name             String
+  clientId         String              @unique
+  clientSecretHash String
+  redirectUris     String
+  scopes           String
+  createdAt        DateTime            @default(now())
+  codes            AuthorizationCode[]
+  refreshTokens    OAuthRefreshToken[]
+}
+
+// A short-lived authorization code for the authorization-code + PKCE flow.
+model AuthorizationCode {
+  id                  Int         @id @default(autoincrement())
+  codeHash            String      @unique
+  clientId            Int
+  userId              Int
+  scopes              String
+  redirectUri         String
+  codeChallenge       String?
+  codeChallengeMethod String?
+  expiresAt           DateTime
+  usedAt              DateTime?
+  createdAt           DateTime    @default(now())
+  client              OAuthClient @relation(fields: [clientId], references: [id])
+  user                User        @relation(fields: [userId], references: [id])
+
+  @@index([clientId])
+}
+
+// A rotating refresh token issued to an OAuth client.
+model OAuthRefreshToken {
+  id        Int         @id @default(autoincrement())
+  tokenHash String      @unique
+  clientId  Int
+  userId    Int
+  scopes    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime    @default(now())
+  client    OAuthClient @relation(fields: [clientId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
+
+  @@index([clientId])
 }

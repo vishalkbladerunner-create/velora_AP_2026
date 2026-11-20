@@ -154,7 +154,7 @@ async function search(term) {
   window.history.replaceState(null, '', url);
 
   try {
-    const response = await fetch('/pharmacies?medicine=' + encodeURIComponent(term));
+    const response = await Velora.api('/api/v1/pharmacies?medicine=' + encodeURIComponent(term));
     if (response.status === 401) {
       setLocked();
       return;
@@ -203,7 +203,7 @@ document.querySelectorAll('[data-term]').forEach((chip) => {
 
 async function init() {
   try {
-    const response = await fetch('/auth/me');
+    const response = await Velora.api('/api/v1/auth/me');
     if (!response.ok) {
       setLocked();
       return;

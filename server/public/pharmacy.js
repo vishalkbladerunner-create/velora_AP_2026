@@ -37,7 +37,7 @@ function setAccountLink() {
   }
 }
 
-fetch('/auth/me')
+Velora.api('/api/v1/auth/me')
   .then((response) => (response.ok ? response.json() : null))
   .then((user) => {
     currentUser = user;
@@ -108,7 +108,7 @@ async function reserve(stockItemId, quantityValue, button) {
   button.textContent = 'Reserving…';
 
   try {
-    const response = await fetch('/holds', {
+    const response = await Velora.api('/api/v1/holds', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stockItemId: stockItemId, quantity: quantity }),
@@ -250,7 +250,7 @@ async function load() {
   }
 
   try {
-    const response = await fetch('/pharmacies/' + encodeURIComponent(id));
+    const response = await Velora.api('/api/v1/pharmacies/' + encodeURIComponent(id));
     const body = await response.json();
 
     if (response.status === 404) {

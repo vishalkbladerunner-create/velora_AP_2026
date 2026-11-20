@@ -1,4 +1,6 @@
 const prisma = require('../db/prisma');
+const audit = require('../services/audit.service');
+const { canCancelHold } = require('../auth/policies');
 
 const HOLD_MINUTES = 30;
 
@@ -46,7 +48,7 @@ const getHolds = async (req, res) => {
     await expireHolds();
 
     const holds = await prisma.hold.findMany({
-      where: { userId: req.session.userId },
+      where: { userId: req.user.id },
       orderBy: { createdAt: 'desc' },
       include: {
         stockItem: {
@@ -107,7 +109,7 @@ const createHold = async (req, res) => {
 
       return tx.hold.create({
         data: {
-          userId: req.session.userId,
+          userId: req.user.id,
           stockItemId: stockItemId,
           quantity: quantity,
           expiresAt: new Date(Date.now() + HOLD_MINUTES * 60 * 1000),
@@ -127,6 +129,13 @@ const createHold = async (req, res) => {
       res.status(400).json({ error: 'Not enough stock' });
       return;
     }
+
+    audit.record('hold.create', {
+      actorId: req.user.id,
+      entity: 'Hold',
+      entityId: hold.id,
+      metadata: { stockItemId: stockItemId, quantity: quantity, expiresAt: hold.expiresAt },
+    });
 
     res.status(201).json(hold);
   } catch (error) {
@@ -154,7 +163,7 @@ const cancelHold = async (req, res) => {
       return;
     }
 
-    if (hold.userId !== req.session.userId) {
+    if (!canCancelHold(req.user, hold)) {
       res.status(403).json({ error: 'Not allowed to change this hold' });
       return;
     }
@@ -187,6 +196,13 @@ const cancelHold = async (req, res) => {
       return;
     }
 
+    audit.record('hold.cancel', {
+      actorId: req.user.id,
+      entity: 'Hold',
+      entityId: id,
+      metadata: { stockItemId: hold.stockItemId, quantity: hold.quantity },
+    });
+
     res.status(204).send();
   } catch (error) {
     console.error(error);
@@ -195,6 +211,7 @@ const cancelHold = async (req, res) => {
 };
 
 module.exports = {
+  expireHolds,
   getHolds,
   createHold,
   cancelHold,

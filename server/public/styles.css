@@ -352,6 +352,16 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .dashboard-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 20px; align-items: start; margin-top: 24px; }
 .pharmacy-name-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .pharmacy-name-row h3 { margin: 0; font-family: var(--serif); font-size: 25px; letter-spacing: -.02em; }
+.security-panel { grid-column: 1 / -1; }
+.mfa-block { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
+.mfa-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.mfa-head h3 { margin: 0 0 2px; font-family: var(--serif); font-size: 23px; letter-spacing: -.02em; }
+.mfa-head p { margin: 0; }
+.stats-row.stats-row-4 { grid-template-columns: repeat(4, 1fr); }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.code-block { margin: 12px 0 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface-2); color: var(--ink-2); font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.form-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .hold-list { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
 .hold { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
 .hold-title { margin: 0; font-size: 14px; font-weight: 700; }
@@ -419,6 +429,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 }
 
 @media (max-width: 780px) {
+  .stats-row-4 { grid-template-columns: repeat(2, 1fr); }
   .shell { width: min(100% - 32px, 1120px); }
   .header-bar { min-height: 64px; grid-template-columns: 1fr; }
   .main-nav, .header-action { display: none; }
@@ -478,6 +489,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
   .auth-head h2 { font-size: 29px; }
   .auth-story h1 { font-size: 35px; }
   .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .stats-row.stats-row-4 { grid-template-columns: repeat(2, 1fr); }
   .stat span { font-size: 24px; }
   .stat label { font-size: 9px; letter-spacing: .06em; }
   .page-head { padding-top: 28px; }

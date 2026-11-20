@@ -1,7 +1,7 @@
 const express = require('express');
 const config = require('../config/env');
-const requireAuth = require('../middlewares/auth');
-const requirePharmacy = require('../middlewares/pharmacy');
+const requireAuth = require('../middlewares/auth').requireAuth;
+const { requirePermission } = require('../auth/permissions');
 const stockController = require('../controllers/stock.controller');
 
 const stockRouter = express.Router();
@@ -9,11 +9,12 @@ const stockRouter = express.Router();
 stockRouter.get('/', stockController.getAll);
 
 // Deployment guard: catalogue writes are not registered in production.
-// A signed-in pharmacy owner may change only their own stock.
+// RBAC grants stock:write; an ABAC ownership check in the controller narrows it
+// to the pharmacy the account actually owns.
 if (config.nodeEnv !== 'production') {
-  stockRouter.post('/', requireAuth, requirePharmacy, stockController.createStock);
-  stockRouter.put('/:id', requireAuth, requirePharmacy, stockController.updateStock);
-  stockRouter.delete('/:id', requireAuth, requirePharmacy, stockController.deleteStock);
+  stockRouter.post('/', requireAuth, requirePermission('stock:write'), stockController.createStock);
+  stockRouter.put('/:id', requireAuth, requirePermission('stock:write'), stockController.updateStock);
+  stockRouter.delete('/:id', requireAuth, requirePermission('stock:write'), stockController.deleteStock);
 }
 
 module.exports = stockRouter;

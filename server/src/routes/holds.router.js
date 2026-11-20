@@ -1,14 +1,12 @@
 const express = require('express');
-const requireAuth = require('../middlewares/auth');
+const requireAuth = require('../middlewares/auth').requireAuth;
+const { requirePermission } = require('../auth/permissions');
 const holdsController = require('../controllers/holds.controller');
 
 const holdsRouter = express.Router();
 
-// Router-level middleware: every hold route needs a session.
-holdsRouter.use(requireAuth);
-
-holdsRouter.get('/', holdsController.getHolds);
-holdsRouter.post('/', holdsController.createHold);
-holdsRouter.delete('/:id', holdsController.cancelHold);
+holdsRouter.get('/', requireAuth, requirePermission('hold:read'), holdsController.getHolds);
+holdsRouter.post('/', requireAuth, requirePermission('hold:create'), holdsController.createHold);
+holdsRouter.delete('/:id', requireAuth, requirePermission('hold:cancel'), holdsController.cancelHold);
 
 module.exports = holdsRouter;
