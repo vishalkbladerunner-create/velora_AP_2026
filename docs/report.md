@@ -5,7 +5,6 @@
 **Term:** Autumn 2026  
 **Authors:** Vishal, Manav, Yash, Sayem  
 **Repository:** [github.com/vishalkbladerunner-create/velora_AP_2026](https://github.com/vishalkbladerunner-create/velora_AP_2026)  
-**Live Tracker:** [velora-capstone.pages.dev/tracker](https://velora-capstone.pages.dev/tracker/)
 
 ---
 
