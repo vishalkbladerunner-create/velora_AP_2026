@@ -22,6 +22,7 @@
       <nav class="main-nav" aria-label="Primary">
         <a href="/" data-nav>Find medicine</a>
         <a href="/catalogue.html" data-nav data-pharmacy-only>Catalogue</a>
+        <a href="/admin.html" data-nav data-admin-only hidden>Admin</a>
         <a href="/account.html" data-nav>Account</a>
       </nav>
       <a class="btn btn-ghost btn-small header-action" href="/account.html" data-auth-link>Account</a>
@@ -77,11 +78,11 @@
             <fieldset class="account-type">
               <legend class="field-label">I am…</legend>
               <label class="type-card">
-                <input type="radio" name="accountType" value="CUSTOMER" checked>
+                <input type="radio" name="role" value="CUSTOMER" checked>
                 <span class="type-body"><strong>Buying medicine</strong><small>Search, reserve and manage holds.</small></span>
               </label>
               <label class="type-card">
-                <input type="radio" name="accountType" value="PHARMACY">
+                <input type="radio" name="role" value="PHARMACY">
                 <span class="type-body"><strong>Running a pharmacy</strong><small>List stock and manage your shelf.</small></span>
               </label>
             </fieldset>
@@ -120,6 +121,9 @@
             <label class="field-label" for="login-password">Password</label>
             <input class="input" id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Your password" required>
 
+            <label class="field-label" id="login-totp-label" for="login-totp" hidden>Authenticator code</label>
+            <input class="input" id="login-totp" name="totp" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456" hidden>
+
             <button class="btn btn-primary btn-block" type="submit">Log in</button>
           </form>
         </div>
@@ -137,6 +141,7 @@
           </div>
           <p id="user-phone" class="muted"></p>
         </div>
+        <a id="admin-link" class="btn btn-ghost" href="/admin.html" hidden>Admin console</a>
         <button id="logout-button" class="btn btn-ghost" type="button">Log out</button>
       </header>
 
@@ -157,6 +162,64 @@
 
             <button class="btn btn-ghost" type="submit">Save details</button>
           </form>
+        </section>
+
+        <section id="security-panel" class="panel security-panel" hidden>
+          <div class="panel-head">
+            <div><h2>Security</h2><p class="muted">Password and active sessions.</p></div>
+          </div>
+          <form id="password-form" class="form" novalidate>
+            <div class="form-row">
+              <div>
+                <label class="field-label" for="current-password">Current password</label>
+                <input class="input" id="current-password" type="password" autocomplete="current-password" required>
+              </div>
+              <div>
+                <label class="field-label" for="new-password">New password</label>
+                <input class="input" id="new-password" type="password" autocomplete="new-password" required>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-ghost" type="submit">Change password</button>
+              <button id="logout-all-button" class="btn btn-ghost" type="button">Sign out everywhere</button>
+            </div>
+          </form>
+
+          <div class="mfa-block">
+            <div class="mfa-head">
+              <div>
+                <h3>Two-factor authentication</h3>
+                <p id="mfa-status" class="muted">Not enabled.</p>
+              </div>
+              <button id="mfa-setup-button" class="btn btn-ghost btn-small" type="button">Set up authenticator</button>
+            </div>
+
+            <div id="mfa-setup" hidden>
+              <p class="muted">Add this secret to an authenticator app, then enter the six-digit code it shows.</p>
+              <pre id="mfa-secret" class="code-block"></pre>
+              <label class="field-label" for="mfa-code">Authenticator code</label>
+              <input class="input" id="mfa-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456">
+              <div class="form-actions">
+                <button id="mfa-enable-button" class="btn btn-primary" type="button">Enable two-factor</button>
+                <button id="mfa-cancel-button" class="btn btn-ghost" type="button">Cancel</button>
+              </div>
+            </div>
+
+            <div id="mfa-disable" hidden>
+              <p class="muted">Disable with your password and a current authenticator code.</p>
+              <div class="form-row">
+                <div>
+                  <label class="field-label" for="mfa-password">Password</label>
+                  <input class="input" id="mfa-password" type="password" autocomplete="current-password">
+                </div>
+                <div>
+                  <label class="field-label" for="mfa-disable-code">Authenticator code</label>
+                  <input class="input" id="mfa-disable-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456">
+                </div>
+              </div>
+              <button id="mfa-disable-button" class="btn btn-ghost" type="button">Disable two-factor</button>
+            </div>
+          </div>
         </section>
 
         <section id="pharmacy-panel" class="panel pharmacy-panel" hidden>

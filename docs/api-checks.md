@@ -3,7 +3,9 @@
 Manual checks run with `curl` against a local PostgreSQL filled by
 `node prisma/dev-seed.js`. Success returns the bare resource; failure returns
 `{ "error": "..." }`. Allowed codes: 200, 201, 204, 400, 401, 403, 404, 500.
-401 and 403 are used only by `/auth`, `/holds`, the authenticated search (`/pharmacies`), the medicine writes and the owner-only pharmacy and stock writes.
+Since the JWT migration on 2026-11-20 the canonical base is `/api/v1`, protected routes expect `Authorization: Bearer <accessToken>`, and the refresh token is the HttpOnly `velora_refresh` cookie. Sections recorded before that date document the session-era client; the JWT suites below record the current behaviour.
+
+401 and 403 are used by the JWT guard, the RBAC guard, the authenticated search and the owner-only pharmacy and stock writes.
 
 The fixture set was expanded on 2026-11-20 to 18 medicines, 6 pharmacies and 31 stock rows. Sections recorded before that date keep the counts that were in force when they were run; the “Fixture refresh” section below states the current numbers.
 
@@ -242,3 +244,76 @@ Run on 2026-11-20 by Vishal against the live local database, `NODE_ENV=developme
 | 19 | `DELETE` | `/medicines/24` as the owner | 204 | 204 | allowed once the stock row was gone |
 
 Cleanup left the database at 6 pharmacies, 18 medicines, 31 stock rows, 1 account and 0 holds. The distance label was also checked in headless Chrome on `/` and `/pharmacy.html?id=2` (`2.4 km`); the steppers render at `0` and the Reserve button stays disabled until the quantity reaches 1.
+
+## JWT, refresh rotation and RBAC (test t12)
+
+Run on 2026-11-20 by Vishal against the live local database with the JWT build. A customer and a pharmacy account were registered, then removed.
+
+| # | Method | Request | Expected | Actual | Body / note |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `POST` | `/api/v1/auth/register` customer | 201 | 201 | `user.role: CUSTOMER`, `accessToken`, `expiresIn: 900`; refresh cookie set |
+| 2 | `GET` | `/api/v1/auth/me` with `Bearer` | 200 | 200 | account returned; no `passwordHash` |
+| 3 | `GET` | `/api/v1/auth/me` with `Bearer not-a-token` | 401 | 401 | `{"error":"Invalid or expired access token"}` |
+| 4 | `POST` | customer tries `/api/v1/medicines` | 403 | 403 | `{"error":"Insufficient permissions"}` |
+| 5 | `GET` | customer tries `/api/v1/admin/overview` | 403 | 403 | `{"error":"Insufficient permissions"}` |
+| 6 | `POST` | `/api/v1/auth/refresh` with the cookie | 200 | 200 | new access token; old refresh hash revoked |
+| 7 | `POST` | `/api/v1/auth/logout` | 204 | 204 | cookie cleared |
+| 8 | `POST` | `/api/v1/auth/refresh` after logout | 401 | 401 | `{"error":"Refresh token missing"}` |
+| 9 | `PUT` | `/api/v1/auth/password` with the current password | 204 | 204 | every refresh token revoked |
+| 10 | `POST` | login with the old password | 401 | 401 | `{"error":"Invalid phone or password"}` |
+| 11 | `POST` | login with the new password | 200 | 200 | new access token |
+| 12 | `POST` | `/api/v1/auth/logout-all` | 204 | 204 | refresh after it returns 401 |
+
+## Admin, audit and operations (test t13)
+
+Run on 2026-11-20 by Vishal with an administrator account.
+
+| # | Method | Request | Expected | Actual | Body / note |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `GET` | `/api/v1/admin/overview` | 200 | 200 | counts, `nextPending`, recent audit |
+| 2 | `GET` | `/api/v1/admin/pharmacies?status=PENDING&page=1&limit=5` | 200 | 200 | `pagination` envelope with two pending rows |
+| 3 | `POST` | `/api/v1/pharmacies` (development create) | 201 | 201 | PENDING pharmacy 19 |
+| 4 | `PATCH` | `/api/v1/admin/pharmacies/19` `{"status":"VERIFIED"}` | 200 | 200 | status changed; audit entry written |
+| 5 | `GET` | `/api/v1/admin/audit?page=1&limit=5` | 200 | 200 | `pagination` envelope, newest first |
+| 6 | `POST` | `/api/v1/admin/oauth-clients` | 201 | 201 | client id + one-time secret |
+| 7 | `POST` | `/api/v1/admin/stock/bulk` two rows | 201 | 201 | `{"requested":2,"created":2,"skipped":0}` |
+| 8 | `POST` | the same bulk row again | 201 | 201 | `{"requested":1,"created":0,"skipped":1}` |
+| 9 | `GET` | `/api/v1/admin/export/stock.csv` | 200 | 200 | `text/csv`; streamed header + 31 data rows |
+| 10 | `GET` | `/api/v1/admin/runtime` | 200 | 200 | event-loop p99, heap, uptime |
+
+The test pharmacy, its stock rows, the test accounts, the OAuth clients and the audit rows were removed afterwards.
+
+## OAuth 2.0 and OpenID Connect (test t14)
+
+Run on 2026-11-20 by Vishal. The browser playground at `/developers.html` completed the same code + PKCE flow end to end.
+
+| # | Request | Expected | Actual | Note |
+| --- | --- | --- | --- | --- |
+| 1 | `POST /oauth/token` client_credentials | 200 | 200 | `scope: holds:read`, HS256 access token |
+| 2 | `GET /oauth/authorize` while signed in | 200 | 200 | consent page names the client and scopes |
+| 3 | `POST /oauth/authorize` decision=approve | 302 | 302 | redirect with one-time `code` and `state` |
+| 4 | `POST /oauth/token` authorization_code + PKCE | 200 | 200 | access, ID and refresh tokens |
+| 5 | `GET /oauth/userinfo` | 200 | 200 | `sub`, `name`, `phone_number`, `role` |
+| 6 | Decode the ID token | RS256 | RS256 | `kid` matches the JWKS key |
+| 7 | `GET /.well-known/openid-configuration` | 200 | 200 | issuer, endpoints, grants, RS256 |
+| 8 | `GET /oauth/jwks` | 200 | 200 | one RSA signing key |
+| 9 | `POST /oauth/token` refresh_token | 200 | 200 | access and refresh tokens rotated |
+| 10 | Wrong PKCE verifier | 400 | 400 | `invalid_grant` |
+| 11 | `/developers.html` full browser flow | tokens | tokens | UserInfo rendered in the page |
+
+## TOTP multi-factor authentication (test t15)
+
+Run on 2026-11-20 by Vishal. Codes were generated with the same TOTP service (`hotp`, 30-second window).
+
+| # | Request | Expected | Actual | Note |
+| --- | --- | --- | --- | --- |
+| 1 | `POST /api/v1/auth/mfa/setup` | 200 | 200 | 32-character base32 secret and `otpauth://` URI |
+| 2 | `POST /api/v1/auth/mfa/enable` with a current code | 200 | 200 | `{"mfaEnabled":true}` |
+| 3 | Logout, then login without `totp` | 401 | 401 | `{"error":"Enter the code from your authenticator app","mfaRequired":true}` |
+| 4 | Login with a wrong code | 401 | 401 | `{"error":"Invalid authenticator code","mfaRequired":true}` |
+| 5 | Login with a valid code | 200 | 200 | access token issued |
+| 6 | `POST /api/v1/auth/mfa/disable` with password + code | 204 | 204 | secret cleared |
+| 7 | Login without a code after disabling | 200 | 200 | MFA challenge gone |
+| 8 | Browser login at 390 px | prompt | prompt | code field appears, valid code opens the dashboard, security panel shows “Enabled” |
+
+The test account and its tokens were removed afterwards. The demo administrator (`9000000000`) and the owner account remain.

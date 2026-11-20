@@ -7,7 +7,8 @@
 //   node prisma/dev-seed.js pharmacies
 //   node prisma/dev-seed.js stock        needs medicines and pharmacies first
 //
-// Safe to run twice: every row is looked up first and only created when absent.
+// Safe to run twice: medicines and pharmacies are upserted, and stock rows use
+// createMany with skipDuplicates, so a second run changes nothing.
 const fs = require('fs');
 const path = require('path');
 const prisma = require('../src/db/prisma');
@@ -23,99 +24,78 @@ async function readJson(fileName) {
 
 async function seedMedicines() {
   const medicines = await readJson('medicines.json');
-  let created = 0;
 
   for (const medicine of medicines) {
-    const existing = await prisma.medicine.findUnique({
+    await prisma.medicine.upsert({
       where: { name: medicine.name },
+      update: { form: medicine.form },
+      create: { name: medicine.name, form: medicine.form },
     });
-
-    if (!existing) {
-      await prisma.medicine.create({
-        data: { name: medicine.name, form: medicine.form },
-      });
-      created = created + 1;
-    }
   }
 
-  console.log('medicines: ' + created + ' created, ' + (medicines.length - created) + ' already there');
+  console.log('medicines: ' + medicines.length + ' upserted');
 }
 
 async function seedPharmacies() {
   const pharmacies = await readJson('pharmacies.json');
-  let created = 0;
 
   for (const pharmacy of pharmacies) {
-    const existing = await prisma.pharmacy.findUnique({
+    await prisma.pharmacy.upsert({
       where: { licenceNumber: pharmacy.licenceNumber },
+      update: {},
+      create: {
+        name: pharmacy.name,
+        area: pharmacy.area,
+        address: pharmacy.address,
+        phone: pharmacy.phone,
+        licenceNumber: pharmacy.licenceNumber,
+        status: pharmacy.status,
+        distanceKm: pharmacy.distanceKm || 2.5,
+      },
     });
-
-    if (!existing) {
-      await prisma.pharmacy.create({
-        data: {
-          name: pharmacy.name,
-          area: pharmacy.area,
-          address: pharmacy.address,
-          phone: pharmacy.phone,
-          licenceNumber: pharmacy.licenceNumber,
-          status: pharmacy.status,
-          distanceKm: pharmacy.distanceKm || 2.5,
-        },
-      });
-      created = created + 1;
-    }
   }
 
-  console.log('pharmacies: ' + created + ' created, ' + (pharmacies.length - created) + ' already there');
+  console.log('pharmacies: ' + pharmacies.length + ' upserted');
 }
 
 async function seedStock() {
   const rows = await readJson('stock.json');
-  let created = 0;
+  const pharmacies = await prisma.pharmacy.findMany({
+    select: { id: true, licenceNumber: true },
+  });
+  const medicines = await prisma.medicine.findMany({
+    select: { id: true, name: true },
+  });
 
-  for (const row of rows) {
-    // Stock rows point at a pharmacy by licence number and a medicine by name,
-    // so the JSON never depends on auto-increment ids.
-    const pharmacy = await prisma.pharmacy.findUnique({
-      where: { licenceNumber: row.licenceNumber },
-    });
-    const medicine = await prisma.medicine.findUnique({
-      where: { name: row.medicine },
-    });
+  const pharmacyByLicence = new Map(pharmacies.map((row) => [row.licenceNumber, row.id]));
+  const medicineByName = new Map(medicines.map((row) => [row.name, row.id]));
 
-    if (!pharmacy || !medicine) {
+  const data = rows.map((row) => {
+    const pharmacyId = pharmacyByLicence.get(row.licenceNumber);
+    const medicineId = medicineByName.get(row.medicine);
+
+    if (!pharmacyId || !medicineId) {
       throw new Error(
         'Stock row needs pharmacy ' + row.licenceNumber + ' and medicine ' + row.medicine +
         '. Seed medicines and pharmacies first.'
       );
     }
 
-    // The schema has @@unique([pharmacyId, medicineId]), so the compound key
-    // can be used directly for this check-then-create.
-    const existingRow = await prisma.stockItem.findUnique({
-      where: {
-        pharmacyId_medicineId: {
-          pharmacyId: pharmacy.id,
-          medicineId: medicine.id,
-        },
-      },
-    });
+    return {
+      pharmacyId: pharmacyId,
+      medicineId: medicineId,
+      quantity: row.quantity,
+      pricePaise: row.pricePaise,
+      updatedAt: new Date(),
+    };
+  });
 
-    if (!existingRow) {
-      await prisma.stockItem.create({
-        data: {
-          pharmacyId: pharmacy.id,
-          medicineId: medicine.id,
-          quantity: row.quantity,
-          pricePaise: row.pricePaise,
-          updatedAt: new Date(),
-        },
-      });
-      created = created + 1;
-    }
-  }
+  const result = await prisma.stockItem.createMany({
+    data: data,
+    skipDuplicates: true,
+  });
 
-  console.log('stock: ' + created + ' created, ' + (rows.length - created) + ' already there');
+  console.log('stock: ' + result.count + ' created, ' + (data.length - result.count) + ' already there');
 }
 
 async function printCounts() {
@@ -127,7 +107,7 @@ async function printCounts() {
 }
 
 async function main() {
-  if (!datasets.includes(dataset)) {
+  if (datasets.includes(dataset) === false) {
     throw new Error('Unknown dataset "' + dataset + '". Use one of: ' + datasets.join(', '));
   }
 

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Velora — Developer playground</title>
+  <meta name="description" content="Run the OAuth 2.0 authorization code flow with PKCE against Velora.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230f5a45'/%3E%3Cpath d='M16 8v16M8 16h16' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="shell header-bar">
+      <a class="brand" href="/" aria-label="Velora home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </span>
+        <span class="brand-word">Velora</span>
+      </a>
+      <nav class="main-nav" aria-label="Primary">
+        <a href="/" data-nav>Find medicine</a>
+        <a href="/catalogue.html" data-nav data-pharmacy-only hidden>Catalogue</a>
+        <a href="/admin.html" data-nav data-admin-only hidden>Admin</a>
+        <a href="/account.html" data-nav>Account</a>
+      </nav>
+      <a class="btn btn-ghost btn-small header-action" href="/account.html">Account</a>
+    </div>
+  </header>
+
+  <main id="main" class="shell">
+    <header class="page-head">
+      <div>
+        <p class="eyebrow">Developer tools</p>
+        <h1>OAuth playground</h1>
+        <p class="muted">Authorization code flow with PKCE, then OpenID Connect UserInfo.</p>
+      </div>
+      <a class="btn btn-ghost" href="/admin.html">Create a client →</a>
+    </header>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div><h2>Client configuration</h2><p class="muted">Register the redirect URI in the admin console first.</p></div>
+      </div>
+      <form id="oauth-form" class="form" novalidate>
+        <div class="form-row">
+          <div>
+            <label class="field-label" for="client-id">Client ID</label>
+            <input class="input" id="client-id" type="text" placeholder="vlr_..." required>
+          </div>
+          <div>
+            <label class="field-label" for="client-secret">Client secret</label>
+            <input class="input" id="client-secret" type="password" placeholder="vls_..." required>
+          </div>
+        </div>
+
+        <label class="field-label" for="scopes">Scopes</label>
+        <input class="input" id="scopes" type="text" value="openid profile holds:read" required>
+
+        <label class="field-label" for="redirect-uri">Redirect URI</label>
+        <input class="input" id="redirect-uri" type="text" readonly>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Start authorization</button>
+          <button id="reset-button" class="btn btn-ghost" type="button">Clear result</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="result-panel" class="panel" hidden>
+      <div class="panel-head">
+        <div><h2>Result</h2><p class="muted">Tokens stay in this browser tab.</p></div>
+        <span id="result-status" class="count-pill"></span>
+      </div>
+      <pre id="token-output" class="code-block"></pre>
+      <h3>UserInfo</h3>
+      <pre id="userinfo-output" class="code-block">Not requested yet.</pre>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <p><strong>Velora</strong> · Verified medicine, held for you.</p>
+      <nav><a href="/">Search</a><a href="/account.html">Account</a></nav>
+      <p class="footer-note">Development build · Sonipat, Haryana</p>
+    </div>
+  </footer>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <a href="/" data-nav>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Search
+    </a>
+    <a href="/admin.html" data-nav data-admin-only hidden>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 7.5 7 10 4-2.5 7-5.5 7-10V6l-7-3Z" stroke="currentColor" stroke-width="1.7"/></svg>
+      Admin
+    </a>
+    <a href="/account.html" data-nav>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c.7-3.3 3.4-5 7-5s6.3 1.7 7 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      Account
+    </a>
+  </nav>
+
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="false"></div>
+  <script src="/ui.js"></script>
+  <script src="/developers.js"></script>
+</body>
+</html>

@@ -116,7 +116,7 @@ function cancelMedicineEditing() {
 }
 
 async function loadMedicines() {
-  const response = await fetch('/medicines');
+  const response = await Velora.api('/api/v1/medicines');
   const body = await response.json();
 
   if (!response.ok) {
@@ -154,7 +154,7 @@ async function loadMedicines() {
       const confirmed = await confirmDelete('Delete ' + medicine.name + '? This is blocked if any pharmacy still stocks it.');
       if (!confirmed) return;
 
-      const deleteResponse = await fetch('/medicines/' + encodeURIComponent(medicine.id), { method: 'DELETE' });
+      const deleteResponse = await Velora.api('/api/v1/medicines/' + encodeURIComponent(medicine.id), { method: 'DELETE' });
       if (deleteResponse.status === 204) {
         Velora.toast('Medicine deleted.', 'success');
         cancelMedicineEditing();
@@ -199,7 +199,7 @@ function setPharmacyState(state) {
 }
 
 async function loadPharmacy() {
-  const response = await fetch('/pharmacies/mine');
+  const response = await Velora.api('/api/v1/pharmacies/mine');
 
   if (response.status === 403) {
     setDenied('This workspace is for pharmacy owners. Your account can still search and reserve medicine.');
@@ -252,7 +252,7 @@ function cancelStockEditing() {
 async function loadStock() {
   if (!myPharmacy) return;
 
-  const response = await fetch('/stock?pharmacyId=' + encodeURIComponent(myPharmacy.id));
+  const response = await Velora.api('/api/v1/stock?pharmacyId=' + encodeURIComponent(myPharmacy.id));
   const body = await response.json();
 
   if (!response.ok) {
@@ -307,7 +307,7 @@ async function loadStock() {
       const confirmed = await confirmDelete('Remove ' + name + ' from your stock?');
       if (!confirmed) return;
 
-      const deleteResponse = await fetch('/stock/' + encodeURIComponent(row.id), { method: 'DELETE' });
+      const deleteResponse = await Velora.api('/api/v1/stock/' + encodeURIComponent(row.id), { method: 'DELETE' });
       if (deleteResponse.status === 204) {
         Velora.toast('Stock row deleted.', 'success');
         cancelStockEditing();
@@ -335,9 +335,9 @@ document.getElementById('add-medicine-form').addEventListener('submit', async (e
   const name = document.getElementById('medicine-name').value.trim();
   const dosageForm = document.getElementById('medicine-form-type').value.trim();
   const editing = editingMedicineId !== null;
-  const url = editing ? '/medicines/' + encodeURIComponent(editingMedicineId) : '/medicines';
+  const url = editing ? '/api/v1/medicines/' + encodeURIComponent(editingMedicineId) : '/api/v1/medicines';
 
-  const response = await fetch(url, {
+  const response = await Velora.api(url, {
     method: editing ? 'PUT' : 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: name, form: dosageForm }),
@@ -377,12 +377,12 @@ document.getElementById('add-stock-form').addEventListener('submit', async (even
     return;
   }
 
-  const url = editing ? '/stock/' + encodeURIComponent(editingStockId) : '/stock';
+  const url = editing ? '/api/v1/stock/' + encodeURIComponent(editingStockId) : '/api/v1/stock';
   const payload = editing
     ? { quantity: quantity, pricePaise: pricePaise }
     : { pharmacyId: myPharmacy.id, medicineId: medicineId, quantity: quantity, pricePaise: pricePaise };
 
-  const response = await fetch(url, {
+  const response = await Velora.api(url, {
     method: editing ? 'PUT' : 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -415,7 +415,7 @@ function setDenied(text) {
 }
 
 async function loadRole() {
-  const response = await fetch('/auth/me');
+  const response = await Velora.api('/api/v1/auth/me');
 
   if (!response.ok) {
     setDenied('Log in with a pharmacy account to manage stock.');
@@ -424,7 +424,7 @@ async function loadRole() {
 
   const user = await response.json();
 
-  if (user.accountType !== 'PHARMACY') {
+  if (user.role !== 'PHARMACY') {
     setDenied('This workspace is for pharmacy owners. Your customer account can search and reserve medicine.');
     return false;
   }

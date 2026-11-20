@@ -1,5 +1,6 @@
 const config = require('../config/env');
 const prisma = require('../db/prisma');
+const audit = require('../services/audit.service');
 
 // Read the :id route parameter; returns null when it is not a whole number.
 function readId(req) {
@@ -177,6 +178,13 @@ async function createPharmacyWithStatus(req, res, status, ownerId) {
       },
     });
 
+    audit.record('pharmacy.register', {
+      actorId: ownerId,
+      entity: 'Pharmacy',
+      entityId: pharmacy.id,
+      metadata: { status: status, licenceNumber: pharmacy.licenceNumber },
+    });
+
     res.status(201).json(pharmacy);
   } catch (error) {
     console.error(error);
@@ -188,7 +196,7 @@ async function createPharmacyWithStatus(req, res, status, ownerId) {
 const getMine = async (req, res) => {
   try {
     const pharmacy = await prisma.pharmacy.findUnique({
-      where: { ownerId: req.session.userId },
+      where: { ownerId: req.user.id },
     });
 
     if (!pharmacy) {
@@ -209,7 +217,7 @@ const getMine = async (req, res) => {
 const registerMyPharmacy = async (req, res) => {
   try {
     const existing = await prisma.pharmacy.findUnique({
-      where: { ownerId: req.session.userId },
+      where: { ownerId: req.user.id },
     });
 
     if (existing) {
@@ -217,8 +225,8 @@ const registerMyPharmacy = async (req, res) => {
       return;
     }
 
-    const status = config.nodeEnv === 'production' ? 'PENDING' : 'VERIFIED';
-    return createPharmacyWithStatus(req, res, status, req.session.userId);
+    const status = config.nodeEnv === 'production' || !config.autoVerifyPharmacies ? 'PENDING' : 'VERIFIED';
+    return createPharmacyWithStatus(req, res, status, req.user.id);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Could not register the pharmacy' });
@@ -239,7 +247,7 @@ const updateMine = async (req, res) => {
     }
 
     const pharmacy = await prisma.pharmacy.findUnique({
-      where: { ownerId: req.session.userId },
+      where: { ownerId: req.user.id },
     });
 
     if (!pharmacy) {
@@ -255,6 +263,12 @@ const updateMine = async (req, res) => {
         address: body.address,
         phone: body.phone,
       },
+    });
+
+    audit.record('pharmacy.update', {
+      actorId: req.user.id,
+      entity: 'Pharmacy',
+      entityId: updated.id,
     });
 
     res.json(updated);
