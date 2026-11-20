@@ -11,7 +11,7 @@
 ![Module system](https://img.shields.io/badge/modules-CommonJS-F7DF1E?logo=javascript&logoColor=black)
 ![Status](https://img.shields.io/badge/phase-P3%20operations%20close-blue)
 
-[Overview](#overview) · [Architecture](#architecture) · [Data model](#data-model) · [API reference](#api-reference) · [Getting started](#getting-started) · [Engineering decisions](#engineering-decisions) · [Tracker](https://velora-capstone.pages.dev/tracker/)
+[Overview](#overview) · [Architecture](#architecture) · [Data model](#data-model) · [API reference](#api-reference) · [Getting started](#getting-started) · [Engineering decisions](#engineering-decisions)
 
 </div>
 
@@ -547,7 +547,7 @@ The account/hold build is local-only: Express’s MemoryStore sessions are lost 
   ```
 
 - **Review:** every commit is read by a ring partner before it is merged.
-- **Plan:** 20 commits across three phases, tracked live at **[velora-capstone.pages.dev/tracker](https://velora-capstone.pages.dev/tracker/)**.
+- **Plan:** 20 commits across three phases.
 
 ---
 
