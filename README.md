@@ -35,7 +35,6 @@ Two account types share the same system. A **customer** searches, reserves stock
 | Medicines resource: list, case-insensitive filter, detail, development-only writes | Done (P2) |
 | Pharmacies resource: medicine search, area filter, detail with nested stock | Done (P2) |
 | Stock resource: list by pharmacy, add, update, delete | Done (P3) |
-| PostgreSQL direct pg driver demo and pool verification | Done (P3) |
 | Search client linked to pharmacy detail page with stock table | Done (P3) |
 | Patient accounts: register, login, logout, session cookie | Done (approved exception) |
 | 30-minute stock holds: reserve, list, cancel, expiry restore | Done (approved exception) |
@@ -446,17 +445,10 @@ The fixtures model a realistic case in Sonipat, Haryana: 18 medicines, six pharm
 
 ```text
 .
-├── course-demos/              Standalone programs that prove the lectures the API does not exercise
-│   ├── http/                  L5–L6  raw http server: manual routing, status codes, Buffer body
-│   ├── fs/                    L2–L4  modules, sync vs callback vs promise reads, streaming a 5,000-row CSV
-│   ├── event-loop/            L2     blocking pbkdf2Sync vs thread-pool pbkdf2, measured
-│   └── express/               L7     all five HTTP methods, params, query, JSON errors
 ├── docs/
 │   ├── api-checks.md          Recorded manual API checks (expected vs actual)
 │   └── *.html                 Architecture and flowchart posters
 ├── server/
-│   ├── course-demos/          Course demos located inside server/ for package resolution
-│   │   └── pg/                L11    direct PostgreSQL pool, parameterized query ($1), vs Prisma
 │   ├── prisma/
 │   │   ├── schema.prisma      Data model (source of truth)
 │   │   ├── migrations/        Versioned SQL, committed
@@ -524,20 +516,6 @@ Every endpoint is exercised with `curl` against a seeded database, and the resul
 
 ---
 
-## Course demos
-
-The API cannot naturally show every lecture, so small, independent programs do. Each has its own README with run instructions and expected output.
-
-| Demo | Run | Lecture | Demonstrates |
-| --- | --- | --- | --- |
-| Raw HTTP | `node course-demos/http/server.js` (port 3001) | L5–L6 | `http.createServer`, manual routing, headers and status codes, POST body via `Buffer` |
-| Files and streams | `node course-demos/fs/index.js` | L2–L4 | user modules; `readFileSync` vs callback vs promise; streaming a 5,000-row CSV; `.pipe()` |
-| Event loop | `node course-demos/event-loop/index.js` | L2 | blocking `pbkdf2Sync` vs pooled `pbkdf2`; libuv's 4-thread pool; `UV_THREADPOOL_SIZE` |
-| Express routing | `node course-demos/express/server.js` (port 3002) | L7 | GET / POST / PUT / PATCH / DELETE, route params, query filters, JSON error envelope |
-| PostgreSQL pool | `node course-demos/pg/index.js 1` (from `server/`) | L11 | `new Pool`, parameterized `$1` query, quoted identifiers, comparison with Prisma |
-
----
-
 ## Scope and non-goals
 
 One exception is approved and recorded in `AGENTS.md`: patient accounts and 30-minute stock holds (bcrypt, express-session, 401/403, Prisma `updateMany` + `$transaction`). Everything else stays within L1–L12. Still out of scope: admin roles and a licence-verification workflow, email verification or password reset, email/SMS, payments, MongoDB, a React client, GPS geolocation, maps, haversine distance calculation and cloud deployment. The distance shown in the client is a seeded sample value stored on each pharmacy.
@@ -554,8 +532,8 @@ The account/hold build is local-only: Express’s MemoryStore sessions are lost 
 | --- | --- |
 | **Vishal** | Toolchain, Express skeleton, configuration, static client, README, accounts and holds *(repository owner)* |
 | **Manav** | Prisma schema and migration, development seed, Medicines and Pharmacies APIs |
-| **Yash** | Error utilities and the course demos (http, fs, event loop, Express routing) |
-| **Sayem** | Stock API, `pg` driver demo, client wiring, contract sweep and report |
+| **Yash** | Error utilities and demo presentation |
+| **Sayem** | Stock API, client wiring, contract sweep and report |
 
 - **Branches:** `feat/<n>-<slug>`, `chore/<n>-<slug>`, `docs/<n>-<slug>`, one per tracked commit.
 - **Commit format:** a conventional subject, then lecture tags, files and phase:

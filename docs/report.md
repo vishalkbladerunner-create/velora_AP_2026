@@ -110,20 +110,20 @@ A `User` stores an id, name, unique mobile number, an optional stored address, a
 
 ## 4. Lecture Syllabus Traceability
 
-The project exercises the CSA213 curriculum across dedicated components and standalone proof programs.
+The project exercises the CSA213 curriculum across the API, the client and the database layer.
 
 *Note on Syllabus Scope: Lecture 10 was not provided in the course syllabus; this report covers all taught lectures (L0–L9, L11, and L12). The accounts and holds row is the one approved exception, recorded in `AGENTS.md`.*
 
 | Lecture | Syllabus Subject | Repository Evidence | Concrete Role in Velora |
 | --- | --- | --- | --- |
 | **L0–L1** | Node.js Architecture, CommonJS, V8 Runtime | [`server/src/server.js`](../server/src/server.js)<br>[`server/package.json`](../server/package.json) | Process lifecycle, CommonJS `require`/`module.exports`, non-blocking event loop execution. |
-| **L2** | Asynchronous Programming & Event Loop | [`course-demos/event-loop/index.js`](../course-demos/event-loop/index.js) | Benchmarking CPU-bound `pbkdf2Sync` versus thread-pooled `pbkdf2` with `UV_THREADPOOL_SIZE`. |
-| **L3–L4** | File System (`fs`), Buffers & Streams | [`server/prisma/dev-seed.js`](../server/prisma/dev-seed.js)<br>[`course-demos/fs/index.js`](../course-demos/fs/index.js) | `fs.promises.readFile` for asynchronous JSON fixture loading; CSV stream piping via `fs.createReadStream`. |
-| **L5–L6** | Native Node HTTP Server | [`course-demos/http/server.js`](../course-demos/http/server.js) | Raw HTTP routing using `http.createServer`, manual status code dispatch, Buffer-based chunk concatenation for POST bodies. |
-| **L7** | Express Basics & Routing | [`course-demos/express/server.js`](../course-demos/express/server.js)<br>[`server/src/routes/`](../server/src/routes/) | Route parameters (`:id`), query parameters, HTTP verbs (GET, POST, PUT, DELETE), JSON error responses. |
+| **L2** | Asynchronous Programming | [`server/src/controllers/holds.controller.js`](../server/src/controllers/holds.controller.js) | Promise-based request handling with `async`/`await`, asynchronous bcrypt calls and propagated errors. |
+| **L3–L4** | File System (`fs`) & Modules | [`server/prisma/dev-seed.js`](../server/prisma/dev-seed.js) | `fs.promises.readFile` for asynchronous JSON fixture loading; CommonJS modules share one Prisma client. |
+| **L5–L6** | HTTP Methods, Status Codes & JSON | [`server/src/controllers/`](../server/src/controllers/) | Verbs map to routes; 200/201/204/400/404 responses carry JSON bodies and structured errors. |
+| **L7** | Express Basics & Routing | [`server/src/routes/`](../server/src/routes/) | Route parameters (`:id`), query parameters, HTTP verbs (GET, POST, PUT, DELETE), JSON error responses. |
 | **L8** | Express Middleware Chain | [`server/src/app.js`](../server/src/app.js)<br>[`server/src/middlewares/logger.js`](../server/src/middlewares/logger.js) | Linear pipeline: body parsing, custom request logging, static directory mounting, terminal 404 fallback. |
 | **L9** | RESTful Architecture & Static Serving | [`server/src/controllers/`](../server/src/controllers/)<br>[`server/public/`](../server/public/) | Resource-oriented URL schemas, state-driven vanilla front-end (`index.html`, `pharmacy.html`) consuming JSON APIs. |
-| **L11** | PostgreSQL & Direct Driver (`pg`) | [`server/course-demos/pg/index.js`](../server/course-demos/pg/index.js)<br>[`server/course-demos/pg/README.md`](../server/course-demos/pg/README.md) | `pg.Pool` connection pooling, `$1` parameterized queries, PostgreSQL quoted identifier semantics (`"StockItem"`). |
+| **L11** | PostgreSQL | [`server/prisma/schema.prisma`](../server/prisma/schema.prisma)<br>[`server/prisma/migrations/`](../server/prisma/migrations/) | PostgreSQL stores the full relational model; access goes through Prisma Client rather than a separate driver. |
 | **L12** | ORM Modeling & Prisma Client | [`server/prisma/schema.prisma`](../server/prisma/schema.prisma)<br>[`server/src/db/prisma.js`](../server/src/db/prisma.js)<br>[`server/src/controllers/stock.controller.js`](../server/src/controllers/stock.controller.js) | Shared Prisma singleton pool, declarative relation filtering, `findMany`, `findUnique`, `create`, `update`, `delete`. |
 | **Approved exception** | bcrypt, express-session, 401/403, Prisma `updateMany` + `$transaction` | [`server/src/controllers/auth.controller.js`](../server/src/controllers/auth.controller.js)<br>[`server/src/controllers/holds.controller.js`](../server/src/controllers/holds.controller.js)<br>[`server/src/middlewares/auth.js`](../server/src/middlewares/auth.js) | Patient accounts and 30-minute stock holds. Recorded in `AGENTS.md`; time-boxed to CP5. |
 
@@ -141,7 +141,7 @@ All API endpoints and operational workflows were verified through end-to-end com
 - **t3 · Stock reads (Commit 16):** 3/3 checks passing. Confirms listing by `pharmacyId`, invalid-id `400`, bracket-query `400`, and PENDING exclusion. Writes are now owner-only and are covered by t9.
 - **t4 · Envelope & Status Code Sweep (Commit 19):** 8/8 checks passing. Confirms the status set, validates `{ error }` envelope structure, ensures terminal 404 on invalid routes, and verifies bracket parameter rejection (`?name[]=dolo` → `400`).
 - **t5 · Client Wiring (Commit 18):** Verified on desktop (1280px) and mobile (390px) viewports. Search results link to `/pharmacy.html?id=<id>`, displaying pharmacy metadata and stock table; 404 and API down states render graceful human-readable errors.
-- **t6 · Seed Idempotency & pg Demo (Commit 17):** Running `node prisma/dev-seed.js` twice produces zero net creations on subsequent runs. `node course-demos/pg/index.js 1` proves identical row counts between raw `pg.Pool` and Prisma Client.
+- **t6 · Seed Idempotency (Commit 17):** Running `node prisma/dev-seed.js` twice produces zero net creations on subsequent runs and reports the same totals.
 - **t7 · Accounts:** 9/9 checks passing. Register, duplicate phone, login, bad password, `/auth/me`, logout, and a stored `$2b$` hash with no hash in any response.
 - **t8 · Holds:** 10/10 checks passing. Reserve, list, cross-user `403`, cancel with stock restore, insufficient stock, PENDING stock, expiry restore, and no double restore.
 - **t9 · Pharmacy ownership:** 12/12 checks passing. `GET /pharmacies/mine` is 404 before registration, `POST /pharmacies/mine` creates one VERIFIED pharmacy, a second registration is 400, own stock is 201, another pharmacy and another user get 403, an anonymous write gets 401, and an owner `PUT`/`DELETE` returns 200/204.
@@ -169,8 +169,8 @@ The following elements remain excluded or deliberately limited:
 | --- | --- | --- |
 | **Vishal** | Toolchain, Express Skeleton, Search Client, Documentation, Accounts and Holds, Pharmacy Ownership, Development Catalogue, Account Types and Editing | Architecture design, README, basic client, PR review, approved-exception auth/hold build, owner-only stock, typed accounts, profile/pharmacy/medicine/stock editing, responsive client |
 | **Manav** | Prisma Schema, Migration, Dev Seed, Medicines & Pharmacies APIs | Data model migrations, seed fixtures, t1/t2 test suites |
-| **Yash** | Error Utilities, Course Demos, Demo Presentation | HTTP/FS/Event-Loop demos; presents t4 |
-| **Sayem** | Stock API, Direct pg Demo, Client Detail Wiring, Contract Sweep & Report | Commits c16–c20: Stock CRUD, pg pool demo, pharmacy detail page, sweep audit and final report |
+| **Yash** | Error Utilities, Demo Presentation | Error infrastructure; presents t4 |
+| **Sayem** | Stock API, Client Detail Wiring, Contract Sweep & Report | Commits c16–c20: Stock CRUD, pharmacy detail page, sweep audit and final report |
 
 ---
 
