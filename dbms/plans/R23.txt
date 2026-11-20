@@ -1,0 +1,32 @@
+-- R23
+-- resolve an OAuth client by its public id (authorize and token).
+SELECT "id", "name", "clientId", "clientSecretHash", "redirectUris", "scopes"
+FROM "OAuthClient"
+WHERE "clientId" = 'vlr_timing';
+
+=== R23 run 1 ===
+Seq Scan on "OAuthClient"  (cost=0.00..1.00 rows=1 width=164) (actual time=0.004..0.005 rows=0 loops=1)
+  Filter: ("clientId" = 'vlr_timing'::text)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=89
+Planning Time: 0.254 ms
+Execution Time: 0.019 ms
+
+=== R23 run 2 ===
+Seq Scan on "OAuthClient"  (cost=0.00..1.00 rows=1 width=164) (actual time=0.004..0.004 rows=0 loops=1)
+  Filter: ("clientId" = 'vlr_timing'::text)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=89
+Planning Time: 0.272 ms
+Execution Time: 0.020 ms
+
+=== R23 run 3 ===
+Seq Scan on "OAuthClient"  (cost=0.00..1.00 rows=1 width=164) (actual time=0.004..0.004 rows=0 loops=1)
+  Filter: ("clientId" = 'vlr_timing'::text)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=89
+Planning Time: 0.256 ms
+Execution Time: 0.019 ms

@@ -1,0 +1,132 @@
+-- R20
+-- the admin overview counts in one round trip. Each scalar subquery is one aggregate; this is the SQL equivalent of the six Prisma count calls.
+SELECT
+    (SELECT count(*) FROM "Pharmacy") AS pharmacies,
+    (SELECT count(*) FROM "Pharmacy" WHERE "status" = 'PENDING') AS pending_pharmacies,
+    (SELECT count(*) FROM "User") AS users,
+    (SELECT count(*) FROM "Medicine") AS medicines,
+    (SELECT count(*) FROM "StockItem") AS stock_rows,
+    (SELECT count(*) FROM "Hold" WHERE "status" = 'ACTIVE') AS active_holds;
+
+=== R20 run 1 ===
+Result  (cost=6.86..6.87 rows=1 width=48) (actual time=0.021..0.022 rows=1 loops=1)
+  Buffers: shared hit=6
+  InitPlan 1 (returns $0)
+    ->  Aggregate  (cost=1.07..1.08 rows=1 width=8) (actual time=0.006..0.006 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Pharmacy"  (cost=0.00..1.06 rows=6 width=0) (actual time=0.002..0.002 rows=6 loops=1)
+                Buffers: shared hit=1
+  InitPlan 2 (returns $1)
+    ->  Aggregate  (cost=1.08..1.09 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Pharmacy" "Pharmacy_1"  (cost=0.00..1.07 rows=2 width=0) (actual time=0.002..0.002 rows=2 loops=1)
+                Filter: (status = 'PENDING'::text)
+                Rows Removed by Filter: 4
+                Buffers: shared hit=1
+  InitPlan 3 (returns $2)
+    ->  Aggregate  (cost=1.02..1.03 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "User"  (cost=0.00..1.02 rows=2 width=0) (actual time=0.002..0.002 rows=2 loops=1)
+                Buffers: shared hit=1
+  InitPlan 4 (returns $3)
+    ->  Aggregate  (cost=1.22..1.23 rows=1 width=8) (actual time=0.005..0.005 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Medicine"  (cost=0.00..1.18 rows=18 width=0) (actual time=0.004..0.004 rows=18 loops=1)
+                Buffers: shared hit=1
+  InitPlan 5 (returns $4)
+    ->  Aggregate  (cost=1.39..1.40 rows=1 width=8) (actual time=0.003..0.003 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "StockItem"  (cost=0.00..1.31 rows=31 width=0) (actual time=0.001..0.002 rows=31 loops=1)
+                Buffers: shared hit=1
+  InitPlan 6 (returns $5)
+    ->  Aggregate  (cost=1.00..1.01 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=0) (actual time=0.002..0.002 rows=0 loops=1)
+                Filter: (status = 'ACTIVE'::text)
+                Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=232
+Planning Time: 0.933 ms
+Execution Time: 0.061 ms
+
+=== R20 run 2 ===
+Result  (cost=6.86..6.87 rows=1 width=48) (actual time=0.020..0.021 rows=1 loops=1)
+  Buffers: shared hit=6
+  InitPlan 1 (returns $0)
+    ->  Aggregate  (cost=1.07..1.08 rows=1 width=8) (actual time=0.006..0.006 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Pharmacy"  (cost=0.00..1.06 rows=6 width=0) (actual time=0.002..0.002 rows=6 loops=1)
+                Buffers: shared hit=1
+  InitPlan 2 (returns $1)
+    ->  Aggregate  (cost=1.08..1.09 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Pharmacy" "Pharmacy_1"  (cost=0.00..1.07 rows=2 width=0) (actual time=0.002..0.002 rows=2 loops=1)
+                Filter: (status = 'PENDING'::text)
+                Rows Removed by Filter: 4
+                Buffers: shared hit=1
+  InitPlan 3 (returns $2)
+    ->  Aggregate  (cost=1.02..1.03 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "User"  (cost=0.00..1.02 rows=2 width=0) (actual time=0.002..0.002 rows=2 loops=1)
+                Buffers: shared hit=1
+  InitPlan 4 (returns $3)
+    ->  Aggregate  (cost=1.22..1.23 rows=1 width=8) (actual time=0.004..0.004 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Medicine"  (cost=0.00..1.18 rows=18 width=0) (actual time=0.003..0.004 rows=18 loops=1)
+                Buffers: shared hit=1
+  InitPlan 5 (returns $4)
+    ->  Aggregate  (cost=1.39..1.40 rows=1 width=8) (actual time=0.003..0.003 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "StockItem"  (cost=0.00..1.31 rows=31 width=0) (actual time=0.001..0.002 rows=31 loops=1)
+                Buffers: shared hit=1
+  InitPlan 6 (returns $5)
+    ->  Aggregate  (cost=1.00..1.01 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=0) (actual time=0.002..0.002 rows=0 loops=1)
+                Filter: (status = 'ACTIVE'::text)
+                Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=232
+Planning Time: 0.875 ms
+Execution Time: 0.059 ms
+
+=== R20 run 3 ===
+Result  (cost=6.86..6.87 rows=1 width=48) (actual time=0.020..0.021 rows=1 loops=1)
+  Buffers: shared hit=6
+  InitPlan 1 (returns $0)
+    ->  Aggregate  (cost=1.07..1.08 rows=1 width=8) (actual time=0.006..0.006 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Pharmacy"  (cost=0.00..1.06 rows=6 width=0) (actual time=0.002..0.003 rows=6 loops=1)
+                Buffers: shared hit=1
+  InitPlan 2 (returns $1)
+    ->  Aggregate  (cost=1.08..1.09 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Pharmacy" "Pharmacy_1"  (cost=0.00..1.07 rows=2 width=0) (actual time=0.002..0.002 rows=2 loops=1)
+                Filter: (status = 'PENDING'::text)
+                Rows Removed by Filter: 4
+                Buffers: shared hit=1
+  InitPlan 3 (returns $2)
+    ->  Aggregate  (cost=1.02..1.03 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "User"  (cost=0.00..1.02 rows=2 width=0) (actual time=0.002..0.002 rows=2 loops=1)
+                Buffers: shared hit=1
+  InitPlan 4 (returns $3)
+    ->  Aggregate  (cost=1.22..1.23 rows=1 width=8) (actual time=0.004..0.004 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Medicine"  (cost=0.00..1.18 rows=18 width=0) (actual time=0.003..0.004 rows=18 loops=1)
+                Buffers: shared hit=1
+  InitPlan 5 (returns $4)
+    ->  Aggregate  (cost=1.39..1.40 rows=1 width=8) (actual time=0.003..0.003 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "StockItem"  (cost=0.00..1.31 rows=31 width=0) (actual time=0.001..0.002 rows=31 loops=1)
+                Buffers: shared hit=1
+  InitPlan 6 (returns $5)
+    ->  Aggregate  (cost=1.00..1.01 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=1)
+          Buffers: shared hit=1
+          ->  Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=0) (actual time=0.002..0.002 rows=0 loops=1)
+                Filter: (status = 'ACTIVE'::text)
+                Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=232
+Planning Time: 0.902 ms
+Execution Time: 0.062 ms

@@ -1,0 +1,35 @@
+-- W5
+-- create an account (POST /auth/register).
+INSERT INTO "User" ("name", "phone", "address", "passwordHash", "role")
+VALUES ('Timing User', '9000000999', '1 Timing Road', 'bcrypt-placeholder', 'CUSTOMER')
+RETURNING "id", "name", "phone", "role";
+
+=== W5 run 1 ===
+Insert on "User"  (cost=0.00..0.02 rows=1 width=205) (actual time=0.150..0.151 rows=1 loops=1)
+  Buffers: shared hit=65 dirtied=2
+  ->  Result  (cost=0.00..0.02 rows=1 width=205) (actual time=0.035..0.035 rows=1 loops=1)
+        Buffers: shared hit=13 dirtied=1
+Planning:
+  Buffers: shared hit=22
+Planning Time: 0.050 ms
+Execution Time: 0.172 ms
+
+=== W5 run 2 ===
+Insert on "User"  (cost=0.00..0.02 rows=1 width=205) (actual time=0.120..0.120 rows=1 loops=1)
+  Buffers: shared hit=65
+  ->  Result  (cost=0.00..0.02 rows=1 width=205) (actual time=0.025..0.025 rows=1 loops=1)
+        Buffers: shared hit=13
+Planning:
+  Buffers: shared hit=22
+Planning Time: 0.044 ms
+Execution Time: 0.140 ms
+
+=== W5 run 3 ===
+Insert on "User"  (cost=0.00..0.02 rows=1 width=205) (actual time=0.115..0.116 rows=1 loops=1)
+  Buffers: shared hit=65
+  ->  Result  (cost=0.00..0.02 rows=1 width=205) (actual time=0.026..0.026 rows=1 loops=1)
+        Buffers: shared hit=13
+Planning:
+  Buffers: shared hit=22
+Planning Time: 0.043 ms
+Execution Time: 0.135 ms

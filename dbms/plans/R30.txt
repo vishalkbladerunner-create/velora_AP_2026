@@ -1,0 +1,42 @@
+-- R30
+-- check whether a pharmacy already stocks a medicine before creating the row (POST /stock). The unique pair is the database backstop.
+SELECT "id"
+FROM "StockItem"
+WHERE "pharmacyId" = 1 AND "medicineId" = 1
+LIMIT 1;
+
+=== R30 run 1 ===
+Limit  (cost=0.00..1.46 rows=1 width=4) (actual time=0.005..0.006 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.46 rows=1 width=4) (actual time=0.005..0.005 rows=1 loops=1)
+        Filter: (("pharmacyId" = 1) AND ("medicineId" = 1))
+        Rows Removed by Filter: 16
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=85
+Planning Time: 0.268 ms
+Execution Time: 0.015 ms
+
+=== R30 run 2 ===
+Limit  (cost=0.00..1.46 rows=1 width=4) (actual time=0.005..0.005 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.46 rows=1 width=4) (actual time=0.005..0.005 rows=1 loops=1)
+        Filter: (("pharmacyId" = 1) AND ("medicineId" = 1))
+        Rows Removed by Filter: 16
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=85
+Planning Time: 0.247 ms
+Execution Time: 0.014 ms
+
+=== R30 run 3 ===
+Limit  (cost=0.00..1.46 rows=1 width=4) (actual time=0.005..0.005 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.46 rows=1 width=4) (actual time=0.005..0.005 rows=1 loops=1)
+        Filter: (("pharmacyId" = 1) AND ("medicineId" = 1))
+        Rows Removed by Filter: 16
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=85
+Planning Time: 0.250 ms
+Execution Time: 0.014 ms

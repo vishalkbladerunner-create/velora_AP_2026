@@ -1,0 +1,42 @@
+-- W14
+-- restore stock on expiry or cancellation.
+UPDATE "StockItem"
+SET "quantity" = "quantity" + 1, "updatedAt" = now()
+WHERE "id" = 1
+RETURNING "id", "quantity";
+
+=== W14 run 1 ===
+Update on "StockItem"  (cost=0.00..1.40 rows=1 width=18) (actual time=0.046..0.046 rows=1 loops=1)
+  Buffers: shared hit=11
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.40 rows=1 width=18) (actual time=0.012..0.013 rows=1 loops=1)
+        Filter: (id = 1)
+        Rows Removed by Filter: 30
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=82
+Planning Time: 0.269 ms
+Execution Time: 0.122 ms
+
+=== W14 run 2 ===
+Update on "StockItem"  (cost=0.00..1.40 rows=1 width=18) (actual time=0.042..0.043 rows=1 loops=1)
+  Buffers: shared hit=11
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.40 rows=1 width=18) (actual time=0.011..0.012 rows=1 loops=1)
+        Filter: (id = 1)
+        Rows Removed by Filter: 30
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=82
+Planning Time: 0.267 ms
+Execution Time: 0.118 ms
+
+=== W14 run 3 ===
+Update on "StockItem"  (cost=0.00..1.40 rows=1 width=18) (actual time=0.054..0.055 rows=1 loops=1)
+  Buffers: shared hit=11
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.40 rows=1 width=18) (actual time=0.014..0.015 rows=1 loops=1)
+        Filter: (id = 1)
+        Rows Removed by Filter: 30
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=82
+Planning Time: 0.270 ms
+Execution Time: 0.138 ms

@@ -1,0 +1,42 @@
+-- W24
+-- update quantity and price on an owned stock row (PUT /stock/:id).
+UPDATE "StockItem"
+SET "quantity" = 9, "pricePaise" = 3150, "updatedAt" = now()
+WHERE "id" = 1
+RETURNING "id", "quantity", "pricePaise";
+
+=== W24 run 1 ===
+Update on "StockItem"  (cost=0.00..1.40 rows=1 width=22) (actual time=0.050..0.051 rows=1 loops=1)
+  Buffers: shared hit=11
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.40 rows=1 width=22) (actual time=0.013..0.013 rows=1 loops=1)
+        Filter: (id = 1)
+        Rows Removed by Filter: 30
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=82
+Planning Time: 0.273 ms
+Execution Time: 0.138 ms
+
+=== W24 run 2 ===
+Update on "StockItem"  (cost=0.00..1.40 rows=1 width=22) (actual time=0.046..0.047 rows=1 loops=1)
+  Buffers: shared hit=11
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.40 rows=1 width=22) (actual time=0.013..0.013 rows=1 loops=1)
+        Filter: (id = 1)
+        Rows Removed by Filter: 30
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=82
+Planning Time: 0.253 ms
+Execution Time: 0.119 ms
+
+=== W24 run 3 ===
+Update on "StockItem"  (cost=0.00..1.40 rows=1 width=22) (actual time=0.047..0.048 rows=1 loops=1)
+  Buffers: shared hit=11
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.40 rows=1 width=22) (actual time=0.013..0.014 rows=1 loops=1)
+        Filter: (id = 1)
+        Rows Removed by Filter: 30
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=82
+Planning Time: 0.270 ms
+Execution Time: 0.123 ms

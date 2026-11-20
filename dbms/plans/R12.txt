@@ -1,0 +1,36 @@
+-- R12
+-- find an account by phone for login and the duplicate-phone check.
+SELECT "id", "name", "phone", "address", "passwordHash", "role",
+       "mfaSecret", "mfaEnabled", "createdAt"
+FROM "User"
+WHERE "phone" = '7678509233';
+
+=== R12 run 1 ===
+Seq Scan on "User"  (cost=0.00..1.02 rows=1 width=153) (actual time=0.003..0.003 rows=1 loops=1)
+  Filter: (phone = '7678509233'::text)
+  Rows Removed by Filter: 1
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=109
+Planning Time: 0.301 ms
+Execution Time: 0.018 ms
+
+=== R12 run 2 ===
+Seq Scan on "User"  (cost=0.00..1.02 rows=1 width=153) (actual time=0.004..0.004 rows=1 loops=1)
+  Filter: (phone = '7678509233'::text)
+  Rows Removed by Filter: 1
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=105
+Planning Time: 0.286 ms
+Execution Time: 0.022 ms
+
+=== R12 run 3 ===
+Seq Scan on "User"  (cost=0.00..1.02 rows=1 width=153) (actual time=0.003..0.003 rows=1 loops=1)
+  Filter: (phone = '7678509233'::text)
+  Rows Removed by Filter: 1
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=105
+Planning Time: 0.262 ms
+Execution Time: 0.018 ms

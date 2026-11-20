@@ -1,6 +1,5 @@
 -- R6
--- READ: verified pharmacies with their stock and each medicine
--- (GET /pharmacies). The API groups these flat rows by pharmacy.
+-- verified pharmacies with their stock and each medicine (GET /pharmacies). The API groups these flat rows by pharmacy; this JOIN is the equivalent read for the nested response.
 SELECT
     p."id" AS pharmacy_id,
     p."name" AS pharmacy_name,
@@ -24,86 +23,91 @@ WHERE p."status" = 'VERIFIED'
 ORDER BY p."name" ASC, m."name" ASC;
 
 === R6 run 1 ===
-Sort  (cost=41.52..41.54 rows=7 width=292) (actual time=0.045..0.045 rows=17 loops=1)
+Sort  (cost=4.50..4.56 rows=21 width=157) (actual time=0.066..0.067 rows=26 loops=1)
   Sort Key: p.name, m.name
-  Sort Method: quicksort  Memory: 28kB
-  Buffers: shared hit=46
-  ->  Nested Loop Left Join  (cost=4.35..41.43 rows=7 width=292) (actual time=0.012..0.022 rows=17 loops=1)
-        Buffers: shared hit=43
-        ->  Nested Loop Left Join  (cost=4.20..39.99 rows=7 width=228) (actual time=0.009..0.014 rows=17 loops=1)
-              Buffers: shared hit=9
-              ->  Seq Scan on "Pharmacy" p  (cost=0.00..14.50 rows=2 width=196) (actual time=0.004..0.005 rows=4 loops=1)
-                    Filter: (status = 'VERIFIED'::text)
-                    Rows Removed by Filter: 2
+  Sort Method: quicksort  Memory: 30kB
+  Buffers: shared hit=6
+  ->  Hash Left Join  (cost=2.53..4.04 rows=21 width=157) (actual time=0.019..0.028 rows=26 loops=1)
+        Hash Cond: (s."medicineId" = m.id)
+        Buffers: shared hit=3
+        ->  Hash Right Join  (cost=1.12..2.57 rows=21 width=140) (actual time=0.012..0.018 rows=26 loops=1)
+              Hash Cond: (s."pharmacyId" = p.id)
+              Buffers: shared hit=2
+              ->  Seq Scan on "StockItem" s  (cost=0.00..1.31 rows=31 width=36) (actual time=0.001..0.002 rows=31 loops=1)
                     Buffers: shared hit=1
-              ->  Bitmap Heap Scan on "StockItem" s  (cost=4.20..12.68 rows=6 width=36) (actual time=0.001..0.001 rows=4 loops=4)
-                    Recheck Cond: ("pharmacyId" = p.id)
-                    Heap Blocks: exact=4
-                    Buffers: shared hit=8
-                    ->  Bitmap Index Scan on "StockItem_pharmacyId_medicineId_key"  (cost=0.00..4.20 rows=6 width=0) (actual time=0.001..0.001 rows=4 loops=4)
-                          Index Cond: ("pharmacyId" = p.id)
-                          Buffers: shared hit=4
-        ->  Index Scan using "Medicine_pkey" on "Medicine" m  (cost=0.15..0.21 rows=1 width=68) (actual time=0.000..0.000 rows=1 loops=17)
-              Index Cond: (id = s."medicineId")
-              Buffers: shared hit=34
+              ->  Hash  (cost=1.07..1.07 rows=4 width=108) (actual time=0.006..0.006 rows=4 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.07 rows=4 width=108) (actual time=0.002..0.003 rows=4 loops=1)
+                          Filter: (status = 'VERIFIED'::text)
+                          Rows Removed by Filter: 2
+                          Buffers: shared hit=1
+        ->  Hash  (cost=1.18..1.18 rows=18 width=21) (actual time=0.004..0.004 rows=18 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "Medicine" m  (cost=0.00..1.18 rows=18 width=21) (actual time=0.002..0.002 rows=18 loops=1)
+                    Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=269
-Planning Time: 0.644 ms
-Execution Time: 0.070 ms
+  Buffers: shared hit=341 dirtied=1
+Planning Time: 0.812 ms
+Execution Time: 0.092 ms
 
 === R6 run 2 ===
-Sort  (cost=41.52..41.54 rows=7 width=292) (actual time=0.041..0.041 rows=17 loops=1)
+Sort  (cost=4.50..4.56 rows=21 width=157) (actual time=0.061..0.062 rows=26 loops=1)
   Sort Key: p.name, m.name
-  Sort Method: quicksort  Memory: 28kB
-  Buffers: shared hit=46
-  ->  Nested Loop Left Join  (cost=4.35..41.43 rows=7 width=292) (actual time=0.009..0.019 rows=17 loops=1)
-        Buffers: shared hit=43
-        ->  Nested Loop Left Join  (cost=4.20..39.99 rows=7 width=228) (actual time=0.006..0.011 rows=17 loops=1)
-              Buffers: shared hit=9
-              ->  Seq Scan on "Pharmacy" p  (cost=0.00..14.50 rows=2 width=196) (actual time=0.003..0.003 rows=4 loops=1)
-                    Filter: (status = 'VERIFIED'::text)
-                    Rows Removed by Filter: 2
+  Sort Method: quicksort  Memory: 30kB
+  Buffers: shared hit=6
+  ->  Hash Left Join  (cost=2.53..4.04 rows=21 width=157) (actual time=0.018..0.027 rows=26 loops=1)
+        Hash Cond: (s."medicineId" = m.id)
+        Buffers: shared hit=3
+        ->  Hash Right Join  (cost=1.12..2.57 rows=21 width=140) (actual time=0.012..0.018 rows=26 loops=1)
+              Hash Cond: (s."pharmacyId" = p.id)
+              Buffers: shared hit=2
+              ->  Seq Scan on "StockItem" s  (cost=0.00..1.31 rows=31 width=36) (actual time=0.001..0.002 rows=31 loops=1)
                     Buffers: shared hit=1
-              ->  Bitmap Heap Scan on "StockItem" s  (cost=4.20..12.68 rows=6 width=36) (actual time=0.001..0.001 rows=4 loops=4)
-                    Recheck Cond: ("pharmacyId" = p.id)
-                    Heap Blocks: exact=4
-                    Buffers: shared hit=8
-                    ->  Bitmap Index Scan on "StockItem_pharmacyId_medicineId_key"  (cost=0.00..4.20 rows=6 width=0) (actual time=0.001..0.001 rows=4 loops=4)
-                          Index Cond: ("pharmacyId" = p.id)
-                          Buffers: shared hit=4
-        ->  Index Scan using "Medicine_pkey" on "Medicine" m  (cost=0.15..0.21 rows=1 width=68) (actual time=0.000..0.000 rows=1 loops=17)
-              Index Cond: (id = s."medicineId")
-              Buffers: shared hit=34
+              ->  Hash  (cost=1.07..1.07 rows=4 width=108) (actual time=0.007..0.007 rows=4 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.07 rows=4 width=108) (actual time=0.002..0.003 rows=4 loops=1)
+                          Filter: (status = 'VERIFIED'::text)
+                          Rows Removed by Filter: 2
+                          Buffers: shared hit=1
+        ->  Hash  (cost=1.18..1.18 rows=18 width=21) (actual time=0.004..0.004 rows=18 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "Medicine" m  (cost=0.00..1.18 rows=18 width=21) (actual time=0.002..0.002 rows=18 loops=1)
+                    Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=269
-Planning Time: 0.580 ms
-Execution Time: 0.066 ms
+  Buffers: shared hit=333
+Planning Time: 0.731 ms
+Execution Time: 0.089 ms
 
 === R6 run 3 ===
-Sort  (cost=41.52..41.54 rows=7 width=292) (actual time=0.040..0.040 rows=17 loops=1)
+Sort  (cost=4.50..4.56 rows=21 width=157) (actual time=0.063..0.064 rows=26 loops=1)
   Sort Key: p.name, m.name
-  Sort Method: quicksort  Memory: 28kB
-  Buffers: shared hit=46
-  ->  Nested Loop Left Join  (cost=4.35..41.43 rows=7 width=292) (actual time=0.009..0.018 rows=17 loops=1)
-        Buffers: shared hit=43
-        ->  Nested Loop Left Join  (cost=4.20..39.99 rows=7 width=228) (actual time=0.006..0.010 rows=17 loops=1)
-              Buffers: shared hit=9
-              ->  Seq Scan on "Pharmacy" p  (cost=0.00..14.50 rows=2 width=196) (actual time=0.002..0.003 rows=4 loops=1)
-                    Filter: (status = 'VERIFIED'::text)
-                    Rows Removed by Filter: 2
+  Sort Method: quicksort  Memory: 30kB
+  Buffers: shared hit=6
+  ->  Hash Left Join  (cost=2.53..4.04 rows=21 width=157) (actual time=0.019..0.028 rows=26 loops=1)
+        Hash Cond: (s."medicineId" = m.id)
+        Buffers: shared hit=3
+        ->  Hash Right Join  (cost=1.12..2.57 rows=21 width=140) (actual time=0.012..0.018 rows=26 loops=1)
+              Hash Cond: (s."pharmacyId" = p.id)
+              Buffers: shared hit=2
+              ->  Seq Scan on "StockItem" s  (cost=0.00..1.31 rows=31 width=36) (actual time=0.002..0.002 rows=31 loops=1)
                     Buffers: shared hit=1
-              ->  Bitmap Heap Scan on "StockItem" s  (cost=4.20..12.68 rows=6 width=36) (actual time=0.001..0.001 rows=4 loops=4)
-                    Recheck Cond: ("pharmacyId" = p.id)
-                    Heap Blocks: exact=4
-                    Buffers: shared hit=8
-                    ->  Bitmap Index Scan on "StockItem_pharmacyId_medicineId_key"  (cost=0.00..4.20 rows=6 width=0) (actual time=0.000..0.000 rows=4 loops=4)
-                          Index Cond: ("pharmacyId" = p.id)
-                          Buffers: shared hit=4
-        ->  Index Scan using "Medicine_pkey" on "Medicine" m  (cost=0.15..0.21 rows=1 width=68) (actual time=0.000..0.000 rows=1 loops=17)
-              Index Cond: (id = s."medicineId")
-              Buffers: shared hit=34
+              ->  Hash  (cost=1.07..1.07 rows=4 width=108) (actual time=0.007..0.007 rows=4 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.07 rows=4 width=108) (actual time=0.003..0.003 rows=4 loops=1)
+                          Filter: (status = 'VERIFIED'::text)
+                          Rows Removed by Filter: 2
+                          Buffers: shared hit=1
+        ->  Hash  (cost=1.18..1.18 rows=18 width=21) (actual time=0.004..0.004 rows=18 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=1
+              ->  Seq Scan on "Medicine" m  (cost=0.00..1.18 rows=18 width=21) (actual time=0.002..0.002 rows=18 loops=1)
+                    Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=269
-Planning Time: 0.681 ms
-Execution Time: 0.063 ms
-
+  Buffers: shared hit=333
+Planning Time: 0.863 ms
+Execution Time: 0.091 ms

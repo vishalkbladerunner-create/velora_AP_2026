@@ -1,0 +1,32 @@
+-- R25
+-- look up an OAuth refresh token by hash (refresh grant).
+SELECT "id", "clientId", "userId", "scopes", "expiresAt", "revokedAt"
+FROM "OAuthRefreshToken"
+WHERE "tokenHash" = 'timing-oauth-refresh-hash';
+
+=== R25 run 1 ===
+Seq Scan on "OAuthRefreshToken"  (cost=0.00..1.00 rows=1 width=60) (actual time=0.004..0.004 rows=0 loops=1)
+  Filter: ("tokenHash" = 'timing-oauth-refresh-hash'::text)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=106
+Planning Time: 0.275 ms
+Execution Time: 0.019 ms
+
+=== R25 run 2 ===
+Seq Scan on "OAuthRefreshToken"  (cost=0.00..1.00 rows=1 width=60) (actual time=0.004..0.005 rows=0 loops=1)
+  Filter: ("tokenHash" = 'timing-oauth-refresh-hash'::text)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=106
+Planning Time: 0.275 ms
+Execution Time: 0.019 ms
+
+=== R25 run 3 ===
+Seq Scan on "OAuthRefreshToken"  (cost=0.00..1.00 rows=1 width=60) (actual time=0.005..0.005 rows=0 loops=1)
+  Filter: ("tokenHash" = 'timing-oauth-refresh-hash'::text)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=106
+Planning Time: 0.297 ms
+Execution Time: 0.021 ms

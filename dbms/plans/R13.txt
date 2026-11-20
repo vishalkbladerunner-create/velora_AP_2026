@@ -1,0 +1,35 @@
+-- R13
+-- load the current account by id (GET /auth/me, refresh, password and MFA operations).
+SELECT "id", "name", "phone", "address", "role", "mfaEnabled", "createdAt"
+FROM "User"
+WHERE "id" = 3;
+
+=== R13 run 1 ===
+Seq Scan on "User"  (cost=0.00..1.02 rows=1 width=59) (actual time=0.003..0.003 rows=1 loops=1)
+  Filter: (id = 3)
+  Rows Removed by Filter: 1
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=96
+Planning Time: 0.274 ms
+Execution Time: 0.020 ms
+
+=== R13 run 2 ===
+Seq Scan on "User"  (cost=0.00..1.02 rows=1 width=59) (actual time=0.002..0.002 rows=1 loops=1)
+  Filter: (id = 3)
+  Rows Removed by Filter: 1
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=96
+Planning Time: 0.267 ms
+Execution Time: 0.018 ms
+
+=== R13 run 3 ===
+Seq Scan on "User"  (cost=0.00..1.02 rows=1 width=59) (actual time=0.002..0.002 rows=1 loops=1)
+  Filter: (id = 3)
+  Rows Removed by Filter: 1
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=96
+Planning Time: 0.248 ms
+Execution Time: 0.017 ms

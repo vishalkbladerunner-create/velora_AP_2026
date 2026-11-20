@@ -1,0 +1,45 @@
+-- W22
+-- revoke an OAuth refresh token on rotation.
+UPDATE "OAuthRefreshToken"
+SET "revokedAt" = now()
+WHERE "tokenHash" = 'timing-oauth-refresh' AND "revokedAt" IS NULL
+RETURNING "id";
+
+=== W22 run 1 ===
+Update on "OAuthRefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.010..0.011 rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Seq Scan on "OAuthRefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.002..0.003 rows=1 loops=1)
+        Filter: (("revokedAt" IS NULL) AND ("tokenHash" = 'timing-oauth-refresh'::text))
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=6
+Planning Time: 0.142 ms
+Trigger for constraint OAuthRefreshToken_clientId_fkey: time=0.010 calls=1
+Trigger for constraint OAuthRefreshToken_userId_fkey: time=0.008 calls=1
+Execution Time: 0.083 ms
+
+=== W22 run 2 ===
+Update on "OAuthRefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.011..0.012 rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Seq Scan on "OAuthRefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.003..0.003 rows=1 loops=1)
+        Filter: (("revokedAt" IS NULL) AND ("tokenHash" = 'timing-oauth-refresh'::text))
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=6
+Planning Time: 0.196 ms
+Trigger for constraint OAuthRefreshToken_clientId_fkey: time=0.013 calls=1
+Trigger for constraint OAuthRefreshToken_userId_fkey: time=0.010 calls=1
+Execution Time: 0.111 ms
+
+=== W22 run 3 ===
+Update on "OAuthRefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.012..0.012 rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Seq Scan on "OAuthRefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.003..0.003 rows=1 loops=1)
+        Filter: (("revokedAt" IS NULL) AND ("tokenHash" = 'timing-oauth-refresh'::text))
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=6
+Planning Time: 0.143 ms
+Trigger for constraint OAuthRefreshToken_clientId_fkey: time=0.013 calls=1
+Trigger for constraint OAuthRefreshToken_userId_fkey: time=0.009 calls=1
+Execution Time: 0.091 ms

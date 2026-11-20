@@ -1,0 +1,44 @@
+-- W25
+-- delete an owned stock row (DELETE /stock/:id).
+DELETE FROM "StockItem"
+WHERE "id" = 1
+RETURNING "id";
+
+=== W25 run 1 ===
+Delete on "StockItem"  (cost=0.00..1.39 rows=1 width=6) (actual time=0.031..0.031 rows=1 loops=1)
+  Buffers: shared hit=7
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.39 rows=1 width=6) (actual time=0.008..0.009 rows=1 loops=1)
+        Filter: (id = 1)
+        Rows Removed by Filter: 30
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=79
+Planning Time: 0.282 ms
+Trigger for constraint Hold_stockItemId_fkey: time=0.198 calls=1
+Execution Time: 0.324 ms
+
+=== W25 run 2 ===
+Delete on "StockItem"  (cost=0.00..1.39 rows=1 width=6) (actual time=0.030..0.031 rows=1 loops=1)
+  Buffers: shared hit=7
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.39 rows=1 width=6) (actual time=0.008..0.008 rows=1 loops=1)
+        Filter: (id = 1)
+        Rows Removed by Filter: 30
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=79
+Planning Time: 0.324 ms
+Trigger for constraint Hold_stockItemId_fkey: time=0.178 calls=1
+Execution Time: 0.292 ms
+
+=== W25 run 3 ===
+Delete on "StockItem"  (cost=0.00..1.39 rows=1 width=6) (actual time=0.032..0.033 rows=1 loops=1)
+  Buffers: shared hit=7
+  ->  Seq Scan on "StockItem"  (cost=0.00..1.39 rows=1 width=6) (actual time=0.009..0.009 rows=1 loops=1)
+        Filter: (id = 1)
+        Rows Removed by Filter: 30
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=79
+Planning Time: 0.257 ms
+Trigger for constraint Hold_stockItemId_fkey: time=0.175 calls=1
+Execution Time: 0.285 ms

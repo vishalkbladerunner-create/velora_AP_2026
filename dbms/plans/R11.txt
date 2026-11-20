@@ -1,34 +1,35 @@
 -- R11
--- READ: duplicate-licence check before creating a pharmacy
--- (POST /pharmacies).
+-- duplicate-licence check before creating a pharmacy (POST /pharmacies).
 SELECT "id", "licenceNumber"
 FROM "Pharmacy"
 WHERE "licenceNumber" = 'HR-SNP-DEMO-0101';
 
 === R11 run 1 ===
-Index Scan using "Pharmacy_licenceNumber_key" on "Pharmacy"  (cost=0.15..8.17 rows=1 width=36) (actual time=0.005..0.005 rows=1 loops=1)
-  Index Cond: ("licenceNumber" = 'HR-SNP-DEMO-0101'::text)
-  Buffers: shared hit=2
+Seq Scan on "Pharmacy"  (cost=0.00..1.07 rows=1 width=21) (actual time=0.004..0.005 rows=1 loops=1)
+  Filter: ("licenceNumber" = 'HR-SNP-DEMO-0101'::text)
+  Rows Removed by Filter: 5
+  Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=84
-Planning Time: 0.244 ms
-Execution Time: 0.018 ms
+  Buffers: shared hit=96
+Planning Time: 0.339 ms
+Execution Time: 0.019 ms
 
 === R11 run 2 ===
-Index Scan using "Pharmacy_licenceNumber_key" on "Pharmacy"  (cost=0.15..8.17 rows=1 width=36) (actual time=0.005..0.005 rows=1 loops=1)
-  Index Cond: ("licenceNumber" = 'HR-SNP-DEMO-0101'::text)
-  Buffers: shared hit=2
+Seq Scan on "Pharmacy"  (cost=0.00..1.07 rows=1 width=21) (actual time=0.004..0.004 rows=1 loops=1)
+  Filter: ("licenceNumber" = 'HR-SNP-DEMO-0101'::text)
+  Rows Removed by Filter: 5
+  Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=84
-Planning Time: 0.263 ms
+  Buffers: shared hit=96
+Planning Time: 0.299 ms
 Execution Time: 0.018 ms
 
 === R11 run 3 ===
-Index Scan using "Pharmacy_licenceNumber_key" on "Pharmacy"  (cost=0.15..8.17 rows=1 width=36) (actual time=0.004..0.004 rows=1 loops=1)
-  Index Cond: ("licenceNumber" = 'HR-SNP-DEMO-0101'::text)
-  Buffers: shared hit=2
+Seq Scan on "Pharmacy"  (cost=0.00..1.07 rows=1 width=21) (actual time=0.004..0.004 rows=1 loops=1)
+  Filter: ("licenceNumber" = 'HR-SNP-DEMO-0101'::text)
+  Rows Removed by Filter: 5
+  Buffers: shared hit=1
 Planning:
-  Buffers: shared hit=84
-Planning Time: 0.251 ms
-Execution Time: 0.016 ms
-
+  Buffers: shared hit=96
+Planning Time: 0.317 ms
+Execution Time: 0.018 ms

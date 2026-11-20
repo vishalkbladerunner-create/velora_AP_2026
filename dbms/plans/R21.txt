@@ -1,0 +1,55 @@
+-- R21
+-- the next pharmacy waiting for licence review (admin overview).
+SELECT "id", "name", "area", "licenceNumber"
+FROM "Pharmacy"
+WHERE "status" = 'PENDING'
+ORDER BY "id" ASC
+LIMIT 1;
+
+=== R21 run 1 ===
+Limit  (cost=1.08..1.09 rows=1 width=49) (actual time=0.016..0.016 rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Sort  (cost=1.08..1.09 rows=2 width=49) (actual time=0.016..0.016 rows=1 loops=1)
+        Sort Key: id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=4
+        ->  Seq Scan on "Pharmacy"  (cost=0.00..1.07 rows=2 width=49) (actual time=0.003..0.004 rows=2 loops=1)
+              Filter: (status = 'PENDING'::text)
+              Rows Removed by Filter: 4
+              Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=113
+Planning Time: 0.314 ms
+Execution Time: 0.026 ms
+
+=== R21 run 2 ===
+Limit  (cost=1.08..1.09 rows=1 width=49) (actual time=0.011..0.011 rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Sort  (cost=1.08..1.09 rows=2 width=49) (actual time=0.011..0.011 rows=1 loops=1)
+        Sort Key: id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=4
+        ->  Seq Scan on "Pharmacy"  (cost=0.00..1.07 rows=2 width=49) (actual time=0.003..0.004 rows=2 loops=1)
+              Filter: (status = 'PENDING'::text)
+              Rows Removed by Filter: 4
+              Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=113
+Planning Time: 0.360 ms
+Execution Time: 0.022 ms
+
+=== R21 run 3 ===
+Limit  (cost=1.08..1.09 rows=1 width=49) (actual time=0.010..0.011 rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Sort  (cost=1.08..1.09 rows=2 width=49) (actual time=0.010..0.010 rows=1 loops=1)
+        Sort Key: id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=4
+        ->  Seq Scan on "Pharmacy"  (cost=0.00..1.07 rows=2 width=49) (actual time=0.003..0.004 rows=2 loops=1)
+              Filter: (status = 'PENDING'::text)
+              Rows Removed by Filter: 4
+              Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=113
+Planning Time: 0.353 ms
+Execution Time: 0.020 ms

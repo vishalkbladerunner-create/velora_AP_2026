@@ -1,0 +1,76 @@
+-- W15
+-- mark a hold CANCELLED (DELETE /holds/:id).
+UPDATE "Hold"
+SET "status" = 'CANCELLED'
+WHERE "id" = (SELECT "id" FROM "Hold" WHERE "status" = 'ACTIVE' ORDER BY "id" DESC LIMIT 1)
+  AND "status" = 'ACTIVE'
+RETURNING "id";
+
+=== W15 run 1 ===
+Update on "Hold"  (cost=1.01..2.01 rows=1 width=38) (actual time=0.019..0.019 rows=1 loops=1)
+  Buffers: shared hit=8
+  InitPlan 1 (returns $0)
+    ->  Limit  (cost=1.01..1.01 rows=1 width=4) (actual time=0.007..0.007 rows=1 loops=1)
+          Buffers: shared hit=4
+          ->  Sort  (cost=1.01..1.01 rows=1 width=4) (actual time=0.007..0.007 rows=1 loops=1)
+                Sort Key: "Hold_1".id DESC
+                Sort Method: quicksort  Memory: 25kB
+                Buffers: shared hit=4
+                ->  Seq Scan on "Hold" "Hold_1"  (cost=0.00..1.00 rows=1 width=4) (actual time=0.002..0.002 rows=1 loops=1)
+                      Filter: (status = 'ACTIVE'::text)
+                      Buffers: shared hit=1
+  ->  Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=38) (actual time=0.009..0.009 rows=1 loops=1)
+        Filter: ((id = $0) AND (status = 'ACTIVE'::text))
+        Buffers: shared hit=5
+Planning:
+  Buffers: shared hit=18
+Planning Time: 0.095 ms
+Trigger for constraint Hold_userId_fkey: time=0.016 calls=1
+Trigger for constraint Hold_stockItemId_fkey: time=0.010 calls=1
+Execution Time: 0.119 ms
+
+=== W15 run 2 ===
+Update on "Hold"  (cost=1.01..2.01 rows=1 width=38) (actual time=0.020..0.021 rows=1 loops=1)
+  Buffers: shared hit=8
+  InitPlan 1 (returns $0)
+    ->  Limit  (cost=1.01..1.01 rows=1 width=4) (actual time=0.008..0.008 rows=1 loops=1)
+          Buffers: shared hit=4
+          ->  Sort  (cost=1.01..1.01 rows=1 width=4) (actual time=0.007..0.007 rows=1 loops=1)
+                Sort Key: "Hold_1".id DESC
+                Sort Method: quicksort  Memory: 25kB
+                Buffers: shared hit=4
+                ->  Seq Scan on "Hold" "Hold_1"  (cost=0.00..1.00 rows=1 width=4) (actual time=0.002..0.002 rows=1 loops=1)
+                      Filter: (status = 'ACTIVE'::text)
+                      Buffers: shared hit=1
+  ->  Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=38) (actual time=0.010..0.010 rows=1 loops=1)
+        Filter: ((id = $0) AND (status = 'ACTIVE'::text))
+        Buffers: shared hit=5
+Planning:
+  Buffers: shared hit=18
+Planning Time: 0.092 ms
+Trigger for constraint Hold_userId_fkey: time=0.018 calls=1
+Trigger for constraint Hold_stockItemId_fkey: time=0.011 calls=1
+Execution Time: 0.117 ms
+
+=== W15 run 3 ===
+Update on "Hold"  (cost=1.01..2.01 rows=1 width=38) (actual time=0.017..0.018 rows=1 loops=1)
+  Buffers: shared hit=8
+  InitPlan 1 (returns $0)
+    ->  Limit  (cost=1.01..1.01 rows=1 width=4) (actual time=0.007..0.007 rows=1 loops=1)
+          Buffers: shared hit=4
+          ->  Sort  (cost=1.01..1.01 rows=1 width=4) (actual time=0.007..0.007 rows=1 loops=1)
+                Sort Key: "Hold_1".id DESC
+                Sort Method: quicksort  Memory: 25kB
+                Buffers: shared hit=4
+                ->  Seq Scan on "Hold" "Hold_1"  (cost=0.00..1.00 rows=1 width=4) (actual time=0.002..0.002 rows=1 loops=1)
+                      Filter: (status = 'ACTIVE'::text)
+                      Buffers: shared hit=1
+  ->  Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=38) (actual time=0.009..0.010 rows=1 loops=1)
+        Filter: ((id = $0) AND (status = 'ACTIVE'::text))
+        Buffers: shared hit=5
+Planning:
+  Buffers: shared hit=18
+Planning Time: 0.088 ms
+Trigger for constraint Hold_userId_fkey: time=0.014 calls=1
+Trigger for constraint Hold_stockItemId_fkey: time=0.010 calls=1
+Execution Time: 0.116 ms

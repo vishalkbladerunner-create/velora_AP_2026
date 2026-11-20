@@ -1,0 +1,32 @@
+-- R18
+-- one hold by id before cancelling (DELETE /holds/:id).
+SELECT "id", "userId", "stockItemId", "quantity", "status", "expiresAt"
+FROM "Hold"
+WHERE "id" = 1;
+
+=== R18 run 1 ===
+Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=56) (actual time=0.003..0.003 rows=0 loops=1)
+  Filter: (id = 1)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=72
+Planning Time: 0.188 ms
+Execution Time: 0.018 ms
+
+=== R18 run 2 ===
+Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=56) (actual time=0.003..0.003 rows=0 loops=1)
+  Filter: (id = 1)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=72
+Planning Time: 0.193 ms
+Execution Time: 0.017 ms
+
+=== R18 run 3 ===
+Seq Scan on "Hold"  (cost=0.00..1.00 rows=1 width=56) (actual time=0.003..0.003 rows=0 loops=1)
+  Filter: (id = 1)
+  Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=72
+Planning Time: 0.192 ms
+Execution Time: 0.017 ms

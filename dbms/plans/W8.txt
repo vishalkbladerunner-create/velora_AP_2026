@@ -1,0 +1,42 @@
+-- W8
+-- revoke one refresh token on logout.
+UPDATE "RefreshToken"
+SET "revokedAt" = now()
+WHERE "tokenHash" = 'timing-revoke' AND "revokedAt" IS NULL
+RETURNING "id";
+
+=== W8 run 1 ===
+Update on "RefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.011..0.012 rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Seq Scan on "RefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.003..0.003 rows=1 loops=1)
+        Filter: (("revokedAt" IS NULL) AND ("tokenHash" = 'timing-revoke'::text))
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=19
+Planning Time: 0.234 ms
+Trigger for constraint RefreshToken_userId_fkey: time=0.014 calls=1
+Execution Time: 0.091 ms
+
+=== W8 run 2 ===
+Update on "RefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.012..0.012 rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Seq Scan on "RefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.003..0.004 rows=1 loops=1)
+        Filter: (("revokedAt" IS NULL) AND ("tokenHash" = 'timing-revoke'::text))
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=19
+Planning Time: 0.226 ms
+Trigger for constraint RefreshToken_userId_fkey: time=0.014 calls=1
+Execution Time: 0.086 ms
+
+=== W8 run 3 ===
+Update on "RefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.011..0.011 rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Seq Scan on "RefreshToken"  (cost=0.00..1.01 rows=1 width=14) (actual time=0.003..0.003 rows=1 loops=1)
+        Filter: (("revokedAt" IS NULL) AND ("tokenHash" = 'timing-revoke'::text))
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=19
+Planning Time: 0.225 ms
+Trigger for constraint RefreshToken_userId_fkey: time=0.016 calls=1
+Execution Time: 0.093 ms

@@ -1,0 +1,60 @@
+-- R17
+-- one stock row and its pharmacy status before reserving (POST /holds).
+SELECT s."id", s."quantity", s."pricePaise", p."id" AS pharmacy_id, p."status"
+FROM "StockItem" s
+JOIN "Pharmacy" p ON p."id" = s."pharmacyId"
+WHERE s."id" = 1;
+
+=== R17 run 1 ===
+Hash Join  (cost=1.40..2.49 rows=1 width=24) (actual time=0.014..0.015 rows=1 loops=1)
+  Hash Cond: (p.id = s."pharmacyId")
+  Buffers: shared hit=2
+  ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=12) (actual time=0.002..0.003 rows=6 loops=1)
+        Buffers: shared hit=1
+  ->  Hash  (cost=1.39..1.39 rows=1 width=16) (actual time=0.007..0.007 rows=1 loops=1)
+        Buckets: 1024  Batches: 1  Memory Usage: 9kB
+        Buffers: shared hit=1
+        ->  Seq Scan on "StockItem" s  (cost=0.00..1.39 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=1)
+              Filter: (id = 1)
+              Rows Removed by Filter: 30
+              Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=266
+Planning Time: 0.590 ms
+Execution Time: 0.035 ms
+
+=== R17 run 2 ===
+Hash Join  (cost=1.40..2.49 rows=1 width=24) (actual time=0.012..0.013 rows=1 loops=1)
+  Hash Cond: (p.id = s."pharmacyId")
+  Buffers: shared hit=2
+  ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=12) (actual time=0.002..0.003 rows=6 loops=1)
+        Buffers: shared hit=1
+  ->  Hash  (cost=1.39..1.39 rows=1 width=16) (actual time=0.006..0.006 rows=1 loops=1)
+        Buckets: 1024  Batches: 1  Memory Usage: 9kB
+        Buffers: shared hit=1
+        ->  Seq Scan on "StockItem" s  (cost=0.00..1.39 rows=1 width=16) (actual time=0.002..0.003 rows=1 loops=1)
+              Filter: (id = 1)
+              Rows Removed by Filter: 30
+              Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=266
+Planning Time: 0.580 ms
+Execution Time: 0.031 ms
+
+=== R17 run 3 ===
+Hash Join  (cost=1.40..2.49 rows=1 width=24) (actual time=0.013..0.015 rows=1 loops=1)
+  Hash Cond: (p.id = s."pharmacyId")
+  Buffers: shared hit=2
+  ->  Seq Scan on "Pharmacy" p  (cost=0.00..1.06 rows=6 width=12) (actual time=0.003..0.003 rows=6 loops=1)
+        Buffers: shared hit=1
+  ->  Hash  (cost=1.39..1.39 rows=1 width=16) (actual time=0.006..0.007 rows=1 loops=1)
+        Buckets: 1024  Batches: 1  Memory Usage: 9kB
+        Buffers: shared hit=1
+        ->  Seq Scan on "StockItem" s  (cost=0.00..1.39 rows=1 width=16) (actual time=0.002..0.003 rows=1 loops=1)
+              Filter: (id = 1)
+              Rows Removed by Filter: 30
+              Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=266
+Planning Time: 0.572 ms
+Execution Time: 0.035 ms
